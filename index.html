@@ -195,6 +195,912 @@
       `;
     };
 
+
+    // ==========================================
+    // PUBLIC SCHOOL & NGO WEBSITE COMPONENT
+    // ==========================================
+    function PublicWebsiteView({ S, onOpenErp, setActiveModal, setModalData, notify }) {
+      const [rollQuery, setRollQuery] = useState('');
+      const [foundStudent, setFoundStudent] = useState(null);
+      const [searched, setSearched] = useState(false);
+      const [mobileNavOpen, setMobileNavOpen] = useState(false);
+      const [activeTab, setActiveTab] = useState('all');
+      const [inquiry, setInquiry] = useState({ name: '', phone: '', email: '', grade: 'Class 6', message: '' });
+      const [inquirySent, setInquirySent] = useState(false);
+
+      const handleResultSearch = (e) => {
+        if (e) e.preventDefault();
+        setSearched(true);
+        const q = rollQuery.trim().toLowerCase();
+        if (!q) {
+          setFoundStudent(null);
+          return;
+        }
+
+        const student = (S.students || []).find(s => 
+          (s.roll && s.roll.toLowerCase() === q) ||
+          (s.admNo && s.admNo.toLowerCase() === q) ||
+          (s.phone && s.phone === q)
+        );
+        setFoundStudent(student || null);
+      };
+
+      const handleInquirySubmit = (e) => {
+        e.preventDefault();
+        setInquirySent(true);
+        notify('धन्यवाद! Your inquiry has been submitted. Our admissions coordinator will reach out shortly.', 'success');
+        setTimeout(() => {
+          setInquiry({ name: '', phone: '', email: '', grade: 'Class 6', message: '' });
+          setInquirySent(false);
+        }, 4000);
+      };
+
+      const scrollToSection = (id) => {
+        setMobileNavOpen(false);
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      };
+
+      // Sample gallery items using authentic Indian educational imagery
+      const galleryItems = [
+        {
+          title: 'Interactive Classroom Learning',
+          category: 'academics',
+          desc: 'Dedicated volunteer and faculty teachers guiding underprivileged children with personalized care.',
+          img: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80'
+        },
+        {
+          title: 'Digital & Computer Literacy Lab',
+          category: 'facilities',
+          desc: 'Bridging the digital divide with hands-on computer education, typing, and digital problem solving.',
+          img: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
+        },
+        {
+          title: 'Nutritious Hot Mid-Day Meals',
+          category: 'welfare',
+          desc: '100% wholesome, hygienic, nutritious daily meals served free to every student to eliminate hunger.',
+          img: 'https://images.unsplash.com/photo-1576867757603-05b134ebc379?auto=format&fit=crop&w=800&q=80'
+        },
+        {
+          title: 'Science Exploration & Experiments',
+          category: 'academics',
+          desc: 'Encouraging inquiry, experimentation, and critical thinking with practical science kits and models.',
+          img: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80'
+        },
+        {
+          title: 'Sports, Athletics & Team Building',
+          category: 'activities',
+          desc: 'Encouraging physical fitness, sportsmanship, agility, and team collaboration on the school playground.',
+          img: 'https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=800&q=80'
+        },
+        {
+          title: 'Free Books & Uniform Distribution',
+          category: 'welfare',
+          desc: 'Providing full sets of CBSE textbooks, notebooks, school bags, and tailored uniforms at zero cost.',
+          img: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80'
+        }
+      ];
+
+      const filteredGallery = activeTab === 'all' ? galleryItems : galleryItems.filter(g => g.category === activeTab);
+
+      return html`
+        <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
+          <!-- Top Notice & Contact Strip -->
+          <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 border-b border-slate-800">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+              <div className="flex items-center gap-2 text-center sm:text-left">
+                <span className="bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
+                  100% Free
+                </span>
+                <span className="truncate">
+                  Admissions Open 2025-26 • Free CBSE Education, Daily Meals & Uniforms for Underprivileged Children
+                </span>
+              </div>
+              <div className="flex items-center gap-4 text-[11px]">
+                <a href="tel:+919845392460" className="hover:text-emerald-400 flex items-center gap-1 transition">
+                  <i className="fa-solid fa-phone text-emerald-400"></i> +91 98453 92460
+                </a>
+                <span className="hidden md:inline text-slate-600">|</span>
+                <span className="hidden md:flex items-center gap-1 text-slate-400">
+                  <i className="fa-solid fa-location-dot text-emerald-400"></i> Bangalore & Gaya Centers
+                </span>
+                <button
+                  onClick=${onOpenErp}
+                  className="ml-2 px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition flex items-center gap-1 shadow-sm"
+                >
+                  <i className="fa-solid fa-lock text-[10px]"></i> Staff Login
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Navigation Bar -->
+          <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+              <!-- Brand Logo & Name -->
+              <div className="flex items-center gap-3 cursor-pointer" onClick=${() => scrollToSection('home')}>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 text-2xl">
+                  <i className="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">
+                      VIDYADAAN
+                    </h1>
+                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
+                      School & NGO
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium tracking-wide mt-1">
+                    Svatantra Trust Initiative • विद्यादानं महत् पुण्यम्
+                  </p>
+                </div>
+              </div>
+
+              <!-- Desktop Nav Links -->
+              <nav className="hidden lg:flex items-center gap-6 text-xs font-bold text-slate-600">
+                <button onClick=${() => scrollToSection('home')} className="hover:text-emerald-600 transition">Home</button>
+                <button onClick=${() => scrollToSection('about')} className="hover:text-emerald-600 transition">About Trust</button>
+                <button onClick=${() => scrollToSection('programs')} className="hover:text-emerald-600 transition">Free Programs</button>
+                <button onClick=${() => scrollToSection('result-checker')} className="text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 transition flex items-center gap-1.5 shadow-sm">
+                  <i className="fa-solid fa-square-poll-vertical text-emerald-600"></i> Check Result
+                </button>
+                <button onClick=${() => scrollToSection('gallery')} className="hover:text-emerald-600 transition">Photo Gallery</button>
+                <button onClick=${() => scrollToSection('notices')} className="hover:text-emerald-600 transition">Notice Board</button>
+                <button onClick=${() => scrollToSection('contact')} className="hover:text-emerald-600 transition">Contact Us</button>
+              </nav>
+
+              <!-- ERP Staff Login CTA Button -->
+              <div className="hidden sm:flex items-center gap-3">
+                <button
+                  onClick=${onOpenErp}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md shadow-slate-900/10 transition flex items-center gap-2 cursor-pointer"
+                >
+                  <i className="fa-solid fa-user-shield text-emerald-400"></i>
+                  <span>Staff & Teacher ERP</span>
+                  <i className="fa-solid fa-arrow-right text-[10px] ml-0.5"></i>
+                </button>
+              </div>
+
+              <!-- Mobile Menu Button -->
+              <button
+                onClick=${() => setMobileNavOpen(!mobileNavOpen)}
+                className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100"
+              >
+                <i className=${`fa-solid ${mobileNavOpen ? 'fa-xmark' : 'fa-bars'} text-xl`}></i>
+              </button>
+            </div>
+
+            <!-- Mobile Navigation Drawer -->
+            ${mobileNavOpen && html`
+              <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-3 text-xs font-bold shadow-xl">
+                <button onClick=${() => scrollToSection('home')} className="block w-full text-left py-2 hover:text-emerald-600 border-b border-slate-50">Home</button>
+                <button onClick=${() => scrollToSection('about')} className="block w-full text-left py-2 hover:text-emerald-600 border-b border-slate-50">About Trust</button>
+                <button onClick=${() => scrollToSection('programs')} className="block w-full text-left py-2 hover:text-emerald-600 border-b border-slate-50">Free Programs</button>
+                <button onClick=${() => scrollToSection('result-checker')} className="block w-full text-left py-2 text-emerald-700 bg-emerald-50 px-3 rounded-lg font-extrabold border border-emerald-200">
+                  <i className="fa-solid fa-square-poll-vertical mr-1"></i> Check Student Result
+                </button>
+                <button onClick=${() => scrollToSection('gallery')} className="block w-full text-left py-2 hover:text-emerald-600 border-b border-slate-50">Photo Gallery</button>
+                <button onClick=${() => scrollToSection('notices')} className="block w-full text-left py-2 hover:text-emerald-600 border-b border-slate-50">Notice Board</button>
+                <button onClick=${() => scrollToSection('contact')} className="block w-full text-left py-2 hover:text-emerald-600 border-b border-slate-50">Contact Us</button>
+                <div className="pt-2">
+                  <button
+                    onClick=${onOpenErp}
+                    className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center gap-2"
+                  >
+                    <i className="fa-solid fa-user-shield text-emerald-400"></i>
+                    <span>Staff & Teacher ERP Login</span>
+                  </button>
+                </div>
+              </div>
+            `}
+          </header>
+
+          <!-- HERO SECTION -->
+          <section id="home" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white py-16 sm:py-24">
+            <!-- Background Glow Orbs -->
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <!-- Left Hero Text -->
+                <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>100% Free Quality CBSE Education Initiative</span>
+                  </div>
+
+                  <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight sm:leading-tight">
+                    Nurturing Bright Futures Through <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300">Free Education</span>
+                  </h2>
+
+                  <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                    <strong>Vidyadaan School</strong> (run by Svatantra Trust) empowers underprivileged children across 
+                    <strong> Doddaballapur (Bangalore)</strong> and <strong>Gaya (Bihar)</strong>. We provide free English-medium CBSE curriculum, wholesome daily mid-day meals, free uniforms, textbooks, and computer education.
+                  </p>
+
+                  <!-- CTA Buttons -->
+                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+                    <button
+                      onClick=${() => scrollToSection('result-checker')}
+                      className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition transform hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-square-poll-vertical text-sm"></i>
+                      <span>Check Student Result (परिणाम देखें)</span>
+                    </button>
+                    <button
+                      onClick=${() => scrollToSection('programs')}
+                      className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition flex items-center gap-2 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-graduation-cap"></i>
+                      <span>Our Free Programs</span>
+                    </button>
+                    <button
+                      onClick=${onOpenErp}
+                      className="px-5 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs border border-slate-700 transition flex items-center gap-2 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-user-lock"></i>
+                      <span>Staff Portal Login</span>
+                    </button>
+                  </div>
+
+                  <!-- Trust Badges -->
+                  <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-800 text-center sm:text-left">
+                    <div>
+                      <div className="text-2xl font-black text-emerald-400">500+</div>
+                      <div className="text-[11px] text-slate-400 font-medium">Students Enrolled</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-emerald-400">100%</div>
+                      <div className="text-[11px] text-slate-400 font-medium">Free Tuition & Meals</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-emerald-400">100%</div>
+                      <div className="text-[11px] text-slate-400 font-medium">CBSE Pass Success</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Hero Image with Floating Badge -->
+                <div className="lg:col-span-5 relative">
+                  <div className="relative mx-auto max-w-md rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10 bg-slate-800">
+                    <img
+                      src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80"
+                      alt="Students at Vidyadaan School"
+                      className="w-full h-80 sm:h-96 object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                    <div className="absolute bottom-4 left-4 right-4 p-4 rounded-2xl bg-white/90 backdrop-blur-md text-slate-900 shadow-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg">
+                          <i className="fa-solid fa-hand-holding-heart"></i>
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-xs">Vidyadaan Charitable Initiative</h4>
+                          <p className="text-[10px] text-slate-500 font-semibold">Free Education • Nutrition • Digital Skills</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ========================================== -->
+          <!-- DIRECT STUDENT RESULT VERIFICATION SECTION -->
+          <!-- ========================================== -->
+          <section id="result-checker" className="py-16 bg-white border-b border-slate-200">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6">
+              <div className="text-center space-y-3 mb-8">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                  <i className="fa-solid fa-square-poll-vertical text-emerald-600"></i>
+                  <span>Public Student & Parent Verification Portal</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
+                  CBSE Examination Result & Marksheet Lookup
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">
+                  अभिभावक और विद्यार्थी अपना <strong>Roll Number</strong> या <strong>Admission Number</strong> दर्ज करके वार्षिक परीक्षा परिणाम व आधिकारिक मार्कशीट देख और प्रिंट कर सकते हैं।
+                </p>
+              </div>
+
+              <!-- Search Card Container -->
+              <div className="bg-slate-50 border-2 border-emerald-500/20 rounded-3xl p-6 sm:p-8 shadow-xl">
+                <form onSubmit=${handleResultSearch} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-700 mb-2">
+                      Enter Student Roll Number or Admission Number (e.g. 101, 102, VD-2025-001)
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <i className="fa-solid fa-magnifying-glass text-emerald-600"></i>
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value=${rollQuery}
+                        onInput=${e => setRollQuery(e.target.value)}
+                        placeholder="Type Roll Number or Admission ID here..."
+                        className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 text-sm font-bold text-slate-800 outline-none transition bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pt-1">
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-file-invoice"></i>
+                      <span>Search & View Marksheet (परिणाम खोजें)</span>
+                    </button>
+
+                    <!-- Quick Helper / Demo pill if students exist in DB -->
+                    ${(S.students || []).length > 0 && html`
+                      <button
+                        type="button"
+                        onClick=${() => {
+                          const first = S.students[0];
+                          setRollQuery(first.roll || first.admNo);
+                          setFoundStudent(first);
+                          setSearched(true);
+                        }}
+                        className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition"
+                      >
+                        Try Demo Roll: ${S.students[0].roll} (${S.students[0].name})
+                      </button>
+                    `}
+                  </div>
+                </form>
+
+                <!-- Search Results Display -->
+                ${searched && html`
+                  <div className="mt-8 pt-6 border-t border-slate-200">
+                    ${foundStudent ? html`
+                      <div className="bg-white rounded-2xl p-6 border border-emerald-200 shadow-md space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-lg">
+                              ${foundStudent.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h4 className="text-base font-extrabold text-slate-900">${foundStudent.name}</h4>
+                              <p className="text-xs text-slate-500 font-medium">
+                                Roll No: <strong className="text-slate-800">${foundStudent.roll}</strong> • Adm No: <strong className="font-mono text-slate-800">${foundStudent.admNo}</strong>
+                              </p>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold self-start sm:self-auto">
+                            <i className="fa-solid fa-circle-check mr-1 text-emerald-600"></i> Verified Record
+                          </span>
+                        </div>
+
+                        <!-- Student Details Grid -->
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                            <div className="text-[10px] text-slate-400 font-bold uppercase">Father's Name</div>
+                            <div className="font-bold text-slate-800 truncate">${foundStudent.father || 'N/A'}</div>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                            <div className="text-[10px] text-slate-400 font-bold uppercase">Date of Birth</div>
+                            <div className="font-bold text-slate-800">${foundStudent.dob}</div>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                            <div className="text-[10px] text-slate-400 font-bold uppercase">Gender</div>
+                            <div className="font-bold text-slate-800">${foundStudent.gender}</div>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                            <div className="text-[10px] text-slate-400 font-bold uppercase">Academic Session</div>
+                            <div className="font-bold text-emerald-700">${S.ngo?.session || '2025-26'}</div>
+                          </div>
+                        </div>
+
+                        <!-- 1-Click Print & View Button -->
+                        <div className="pt-2 flex flex-wrap items-center gap-3">
+                          <button
+                            onClick=${() => {
+                              setActiveModal('report_card');
+                              setModalData(foundStudent);
+                            }}
+                            className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition flex items-center gap-2 cursor-pointer"
+                          >
+                            <i className="fa-solid fa-print text-emerald-400"></i>
+                            <span>View & 1-Click Print Official Marksheet (मार्कशीट प्रिंट करें)</span>
+                          </button>
+                        </div>
+                      </div>
+                    ` : html`
+                      <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
+                        <i className="fa-solid fa-circle-question text-3xl text-amber-500"></i>
+                        <h4 className="font-bold text-amber-900 text-sm">No Student Record Found for "${rollQuery}"</h4>
+                        <p className="text-xs text-amber-700 max-w-md mx-auto">
+                          Please verify your Roll Number or Admission ID. If you recently enrolled, please contact the school administration office or ask your teacher.
+                        </p>
+                      </div>
+                    `}
+                  </div>
+                `}
+              </div>
+            </div>
+          </section>
+
+          <!-- ABOUT US & TRUST SECTION -->
+          <section id="about" className="py-20 bg-slate-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <div className="lg:col-span-6 space-y-5">
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                    About Svatantra Trust & Vidyadaan School
+                  </span>
+                  <h3 className="text-3xl font-black text-slate-900 leading-tight">
+                    Dedicated to Breaking the Cycle of Poverty Through Quality Education
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    <strong>Vidyadaan School</strong> was founded under the aegis of the <strong>Svatantra Trust</strong> with the core conviction that every child, regardless of socio-economic background, deserves access to a transformative, high-quality, English-medium education.
+                  </p>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    Operating centers in <strong>Doddaballapur (Bangalore Rural)</strong> opposite the L&T factory, and in <strong>Gaya (Bihar)</strong> as a grassroots trustee initiative, we ensure zero financial burden on families. All tuition, books, bags, shoes, uniform sets, and daily nutritious meals are provided completely free of charge.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
+                    <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold mb-2">
+                        <i className="fa-solid fa-bullseye"></i>
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Our Mission</h4>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        To educate, nourish, and empower underprivileged children to reach their fullest academic and human potential.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold mb-2">
+                        <i className="fa-solid fa-eye"></i>
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Our Vision</h4>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        A society where poverty is never an obstacle to learning, leadership, dignity, and career success.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-6 grid grid-cols-2 gap-4">
+                  <img
+                    src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=600&q=80"
+                    alt="Classroom"
+                    className="rounded-3xl shadow-lg h-56 w-full object-cover transform translate-y-4"
+                    loading="lazy"
+                  />
+                  <img
+                    src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80"
+                    alt="Computer Lab"
+                    className="rounded-3xl shadow-lg h-56 w-full object-cover"
+                    loading="lazy"
+                  />
+                  <img
+                    src="https://images.unsplash.com/photo-1576867757603-05b134ebc379?auto=format&fit=crop&w=600&q=80"
+                    alt="Mid-Day Meal"
+                    className="rounded-3xl shadow-lg h-56 w-full object-cover"
+                    loading="lazy"
+                  />
+                  <img
+                    src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=600&q=80"
+                    alt="Library & Books"
+                    className="rounded-3xl shadow-lg h-56 w-full object-cover transform translate-y-4"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- FREE PROGRAMS & PILLARS SECTION -->
+          <section id="programs" className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  Comprehensive Welfare & Academics
+                </span>
+                <h3 className="text-3xl font-black text-slate-900">
+                  Everything a Child Needs to Excel
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500">
+                  We address the complete lifecycle of a child's learning journey, from nutrition to digital skills.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 hover:border-emerald-500 transition duration-200 space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/20">
+                    <i className="fa-solid fa-book-open"></i>
+                  </div>
+                  <h4 className="text-base font-extrabold text-slate-900">100% Free CBSE Curriculum</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Complete schooling from Primary to Secondary grades aligned with CBSE national curriculum. English communicative skills, mathematics, sciences, and environmental awareness.
+                  </p>
+                  <ul className="text-xs text-slate-500 space-y-1.5 font-medium">
+                    <li><i className="fa-solid fa-check text-emerald-600 mr-2"></i> Free textbooks & workbooks</li>
+                    <li><i className="fa-solid fa-check text-emerald-600 mr-2"></i> Individual teacher attention</li>
+                    <li><i className="fa-solid fa-check text-emerald-600 mr-2"></i> Regular formative assessments</li>
+                  </ul>
+                </div>
+
+                <!-- Card 2 -->
+                <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 hover:border-emerald-500 transition duration-200 space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-md shadow-amber-500/20">
+                    <i className="fa-solid fa-bowl-food"></i>
+                  </div>
+                  <h4 className="text-base font-extrabold text-slate-900">Nutritious Hot Mid-Day Meals</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    No child can learn on an empty stomach. We provide freshly prepared, balanced, hygienic hot lunches daily to foster growth, stamina, and cognitive focus.
+                  </p>
+                  <ul className="text-xs text-slate-500 space-y-1.5 font-medium">
+                    <li><i className="fa-solid fa-check text-amber-500 mr-2"></i> Balanced proteins & greens</li>
+                    <li><i className="fa-solid fa-check text-amber-500 mr-2"></i> Pure drinking water facilities</li>
+                    <li><i className="fa-solid fa-check text-amber-500 mr-2"></i> Regular health checkups</li>
+                  </ul>
+                </div>
+
+                <!-- Card 3 -->
+                <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 hover:border-emerald-500 transition duration-200 space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-600/20">
+                    <i className="fa-solid fa-laptop-code"></i>
+                  </div>
+                  <h4 className="text-base font-extrabold text-slate-900">Computer & Digital Literacy</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    State-of-the-art computer systems empowering students with typing, basic programming, internet navigation, and modern software skills for tomorrow's careers.
+                  </p>
+                  <ul className="text-xs text-slate-500 space-y-1.5 font-medium">
+                    <li><i className="fa-solid fa-check text-indigo-600 mr-2"></i> 1-student-per-PC sessions</li>
+                    <li><i className="fa-solid fa-check text-indigo-600 mr-2"></i> STEM practical learning</li>
+                    <li><i className="fa-solid fa-check text-indigo-600 mr-2"></i> Digital literacy certifications</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- PHOTO GALLERY SECTION -->
+          <section id="gallery" className="py-20 bg-slate-50 border-t border-slate-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="text-center max-w-2xl mx-auto space-y-3 mb-10">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  Campus Life & Moments
+                </span>
+                <h3 className="text-3xl font-black text-slate-900">
+                  Photo Gallery: Life at Vidyadaan
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500">
+                  Glimpses of daily classrooms, mid-day meals, celebrations, science exhibitions, and smiles.
+                </p>
+
+                <!-- Filter Tabs -->
+                <div className="flex flex-wrap justify-center gap-2 pt-4">
+                  <button
+                    onClick=${() => setActiveTab('all')}
+                    className=${`px-4 py-1.5 rounded-full text-xs font-bold transition ${activeTab === 'all' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                  >
+                    All Photos
+                  </button>
+                  <button
+                    onClick=${() => setActiveTab('academics')}
+                    className=${`px-4 py-1.5 rounded-full text-xs font-bold transition ${activeTab === 'academics' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                  >
+                    Classrooms & Academics
+                  </button>
+                  <button
+                    onClick=${() => setActiveTab('welfare')}
+                    className=${`px-4 py-1.5 rounded-full text-xs font-bold transition ${activeTab === 'welfare' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                  >
+                    Meals & Uniforms
+                  </button>
+                  <button
+                    onClick=${() => setActiveTab('facilities')}
+                    className=${`px-4 py-1.5 rounded-full text-xs font-bold transition ${activeTab === 'facilities' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                  >
+                    Computer Labs
+                  </button>
+                </div>
+              </div>
+
+              <!-- Gallery Grid -->
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${filteredGallery.map((g, idx) => html`
+                  <div key=${idx} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-xl transition-all duration-300 group">
+                    <div className="relative overflow-hidden h-52">
+                      <img
+                        src=${g.img}
+                        alt=${g.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        loading="lazy"
+                      />
+                      <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-emerald-300 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full">
+                        ${g.category}
+                      </span>
+                    </div>
+                    <div className="p-5 space-y-1.5">
+                      <h4 className="font-extrabold text-slate-900 text-sm group-hover:text-emerald-700 transition">${g.title}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">${g.desc}</p>
+                    </div>
+                  </div>
+                `)}
+              </div>
+            </div>
+          </section>
+
+          <!-- NOTICE BOARD & CIRCULARS (REACTIVE WITH ERP STATE) -->
+          <section id="notices" className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <!-- Notice Board Column -->
+                <div className="lg:col-span-7 space-y-6">
+                  <div>
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                      Official Bulletins
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+                      Notice Board & Circulars
+                    </h3>
+                    <p className="text-xs text-slate-500">Live official announcements issued by the principal and academic council.</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    ${(S.announcements || []).map(a => html`
+                      <div key=${a.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-emerald-400 transition space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-extrabold text-slate-900 text-sm">${a.title}</span>
+                          <span className="text-[10px] font-bold text-slate-400 font-mono"><i className="fa-solid fa-calendar mr-1"></i>${a.date}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed">${a.desc}</p>
+                      </div>
+                    `)}
+                  </div>
+                </div>
+
+                <!-- Upcoming Events Column -->
+                <div className="lg:col-span-5 space-y-6">
+                  <div>
+                    <span className="text-xs font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+                      School Calendar
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+                      Upcoming Events
+                    </h3>
+                    <p className="text-xs text-slate-500">Important dates and institutional milestones.</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    ${(S.events || []).map(ev => html`
+                      <div key=${ev.id} className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex flex-col items-center justify-center font-bold flex-shrink-0">
+                          <span className="text-[9px] uppercase leading-none opacity-80">Date</span>
+                          <span className="text-xs leading-none mt-0.5 font-mono">${ev.date.slice(8) || '25'}</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-slate-900 text-xs truncate">${ev.title}</h4>
+                          <div className="text-[10px] text-indigo-700 font-semibold mt-0.5"><i className="fa-solid fa-clock mr-1"></i>${ev.time || '10:00 AM'}</div>
+                          <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">${ev.desc}</p>
+                        </div>
+                      </div>
+                    `)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- CONTACT US & ADMISSION INQUIRY -->
+          <section id="contact" className="py-20 bg-slate-900 text-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <!-- Left Details -->
+                <div className="lg:col-span-6 space-y-6">
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/30">
+                    Get In Touch
+                  </span>
+                  <h3 className="text-3xl font-black tracking-tight leading-tight">
+                    Visit Our Campus or Reach Out to Our Admissions Team
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Whether you are an underprivileged family seeking admission for your child, a volunteer educator looking to teach, or a supporter wishing to donate mid-day meals or books, our doors are always open.
+                  </p>
+
+                  <div className="space-y-4 pt-2 text-xs">
+                    <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-base flex-shrink-0">
+                        <i className="fa-solid fa-location-dot"></i>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-200">Bangalore Campus (Main School)</h4>
+                        <p className="text-slate-400 text-[11px] mt-0.5">
+                          Opposite L&T Factory, No. 105/106, Devanahalli Road, Shivapura Grama, Kasaba Hobli, Doddaballapur, Bangalore - 561203
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-base flex-shrink-0">
+                        <i className="fa-brands fa-youtube"></i>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-200">Gaya, Bihar Learning Center</h4>
+                        <p className="text-slate-400 text-[11px] mt-0.5">
+                          Vidyadaan Trustee School, Gaya, Bihar • YouTube: <a href="https://www.youtube.com/@vidyadaanschoolgayabihar2726" target="_blank" className="text-emerald-400 underline font-bold">@vidyadaanschoolgayabihar2726</a>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-base flex-shrink-0">
+                        <i className="fa-solid fa-phone"></i>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-200">Phone Support</h4>
+                        <p className="text-emerald-400 font-mono font-bold text-[11px]">+91 98453 92460</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-base flex-shrink-0">
+                        <i className="fa-solid fa-envelope"></i>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-200">Official Email</h4>
+                        <p className="text-emerald-400 font-mono font-bold text-[11px]">vidyadaanvidyadaan2@gmail.com</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Inquiry Form -->
+                <div className="lg:col-span-6 bg-slate-800/90 border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl">
+                  <h4 className="text-lg font-black text-white mb-1">Send Admission or General Inquiry</h4>
+                  <p className="text-xs text-slate-400 mb-6">Fill out the form below and we will get back to you within 24 hours.</p>
+
+                  <form onSubmit=${handleInquirySubmit} className="space-y-4 text-xs">
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">Parent or Guardian Full Name</label>
+                      <input
+                        type="text"
+                        required
+                        value=${inquiry.name}
+                        onInput=${e => setInquiry({ ...inquiry, name: e.target.value })}
+                        placeholder="e.g. Ramesh Kumar"
+                        className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-emerald-500 transition font-medium"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-slate-300 font-bold mb-1">Mobile / WhatsApp Number</label>
+                        <input
+                          type="tel"
+                          required
+                          value=${inquiry.phone}
+                          onInput=${e => setInquiry({ ...inquiry, phone: e.target.value })}
+                          placeholder="e.g. 9845392460"
+                          className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-emerald-500 transition font-mono font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-300 font-bold mb-1">Class / Grade Seeking</label>
+                        <select
+                          value=${inquiry.grade}
+                          onChange=${e => setInquiry({ ...inquiry, grade: e.target.value })}
+                          className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-emerald-500 transition font-bold"
+                        >
+                          <option value="Class 1">Class 1 (Primary)</option>
+                          <option value="Class 2">Class 2 (Primary)</option>
+                          <option value="Class 3">Class 3 (Primary)</option>
+                          <option value="Class 4">Class 4 (Primary)</option>
+                          <option value="Class 5">Class 5 (Primary)</option>
+                          <option value="Class 6">Class 6 (Middle)</option>
+                          <option value="Class 7">Class 7 (Middle)</option>
+                          <option value="Class 8">Class 8 (Middle)</option>
+                          <option value="Class 9">Class 9 (High School)</option>
+                          <option value="Class 10">Class 10 (CBSE Board)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">Your Message or Child's Details</label>
+                      <textarea
+                        rows="3"
+                        required
+                        value=${inquiry.message}
+                        onInput=${e => setInquiry({ ...inquiry, message: e.target.value })}
+                        placeholder="Mention any specific details regarding admission, free meals, or volunteer teaching..."
+                        className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-emerald-500 transition font-medium"
+                      ></textarea>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled=${inquirySent}
+                      className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      ${inquirySent
+                        ? html`<i className="fa-solid fa-check"></i> Inquiry Submitted!`
+                        : html`<i className="fa-solid fa-paper-plane"></i> Submit Inquiry to Vidyadaan`}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- INSTITUTIONAL FOOTER -->
+          <footer className="bg-slate-950 text-slate-400 text-xs py-12 border-t border-slate-800">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800">
+                <div className="space-y-3 md:col-span-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                      <i className="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <span className="font-black text-white text-base">VIDYADAAN SCHOOL</span>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
+                    A philanthropic education initiative by Svatantra Trust. Providing 100% free education, textbooks, stationery, school uniforms, and hot nutritious meals to underprivileged children in Doddaballapur (Bangalore) and Gaya (Bihar).
+                  </p>
+                  <div className="text-[11px] text-emerald-400 font-bold">
+                    Registration No: ${S.ngo?.regNo || 'NGO/DL/2021/049182'} • Trust Regd.
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h5 className="font-extrabold text-white uppercase text-xs tracking-wider">Quick Navigation</h5>
+                  <ul className="space-y-1.5 text-slate-400">
+                    <li><button onClick=${() => scrollToSection('home')} className="hover:text-emerald-400">Home</button></li>
+                    <li><button onClick=${() => scrollToSection('about')} className="hover:text-emerald-400">About Svatantra Trust</button></li>
+                    <li><button onClick=${() => scrollToSection('programs')} className="hover:text-emerald-400">Free Education Schemes</button></li>
+                    <li><button onClick=${() => scrollToSection('result-checker')} className="hover:text-emerald-400 font-bold text-emerald-300">Check CBSE Result</button></li>
+                    <li><button onClick=${() => scrollToSection('gallery')} className="hover:text-emerald-400">Photo Gallery</button></li>
+                    <li><button onClick=${() => scrollToSection('contact')} className="hover:text-emerald-400">Campus Addresses</button></li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <h5 className="font-extrabold text-white uppercase text-xs tracking-wider">Staff & Administration</h5>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Authorized school administrators and faculty members can log in to the ERP management system below.
+                  </p>
+                  <button
+                    onClick=${onOpenErp}
+                    className="mt-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600 text-white font-bold text-xs border border-slate-700 transition flex items-center gap-2"
+                  >
+                    <i className="fa-solid fa-lock text-emerald-400"></i>
+                    <span>Access Staff Portal</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
+                <div>
+                  © 2026 VIDYADAAN SCHOOL (Svatantra Trust). All Rights Reserved.
+                </div>
+                <div className="flex items-center gap-4">
+                  <a href="https://www.youtube.com/@vidyadaanschoolgayabihar2726" target="_blank" className="hover:text-red-400 flex items-center gap-1">
+                    <i className="fa-brands fa-youtube text-red-500"></i> YouTube Channel
+                  </a>
+                  <a href="https://www.justdial.com/Bangalore/Vidyadaan-School-Opposite-Lnt-Factory-Doddaballapur/080PXX80-XX80-180205171721-Z2H2_BZDET" target="_blank" className="hover:text-amber-400 flex items-center gap-1">
+                    <i className="fa-solid fa-star text-amber-500"></i> Justdial Rating (4.8★)
+                  </a>
+                </div>
+              </div>
+            </div>
+          </footer>
+        </div>
+      `;
+    }
+
+
     // ==========================================
     // AUTHENTICATION & LOGIN GATE SYSTEM
     // ==========================================
@@ -211,7 +1117,7 @@
       return { isAuthenticated: false, user: null };
     };
 
-    function LoginView({ S, onLogin, onOpenPublicLookup, notify }) {
+    function LoginView({ S, onLogin, onBackToWebsite, notify }) {
       const [selectedRole, setSelectedRole] = useState('admin'); // 'admin' or 'teacher'
       const [username, setUsername] = useState('admin');
       const [password, setPassword] = useState('admin123');
@@ -291,6 +1197,18 @@
       return html`
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 flex flex-col justify-center items-center p-4 selection:bg-emerald-500 selection:text-white">
           <div className="w-full max-w-md my-auto">
+            <!-- Back to School Website Button -->
+            <div className="mb-4 flex items-center justify-between">
+              <button
+                type="button"
+                onClick=${onBackToWebsite}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold transition shadow cursor-pointer"
+              >
+                <i className="fa-solid fa-arrow-left text-emerald-400"></i>
+                <span>← Back to School Website (मुख्य वेबसाइट)</span>
+              </button>
+            </div>
+
             <!-- Logo & Brand Header -->
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 mb-3 shadow-xl shadow-emerald-950/50 backdrop-blur-md">
@@ -458,11 +1376,11 @@
             <div className="mt-5 text-center">
               <button
                 type="button"
-                onClick=${onOpenPublicLookup}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800/90 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 border border-slate-700 text-xs font-bold transition shadow-xl"
+                onClick=${onBackToWebsite}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800/90 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 border border-slate-700 text-xs font-bold transition shadow-xl cursor-pointer"
               >
-                <i className="fa-solid fa-graduation-cap"></i>
-                <span>Student / Parent Result Lookup (परिणाम पोर्टल) →</span>
+                <i className="fa-solid fa-globe"></i>
+                <span>Visit Public School Website & Check Results →</span>
               </button>
             </div>
 
@@ -482,7 +1400,7 @@
     function App() {
       const [S, setS] = useState(loadState);
       const [auth, setAuth] = useState(getInitialAuth);
-      const [isPublicLookup, setIsPublicLookup] = useState(false);
+      const [appMode, setAppMode] = useState('website'); // 'website' (public homepage) or 'erp' (staff ERP)
       const [view, setView] = useState(() => (auth.user?.role === 'teacher' ? 'results' : 'dashboard'));
       const [sidebarOpen, setSidebarOpen] = useState(false);
       const [activeModal, setActiveModal] = useState(null); // 'student_form', 'report_card', 'tc', 'id_card', 'event_form', 'announcement_form'
@@ -516,6 +1434,7 @@
         const newAuth = { isAuthenticated: true, user };
         setAuth(newAuth);
         localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(newAuth));
+        setAppMode('erp');
         if (user.role === 'teacher') {
           setView('results');
         } else {
@@ -528,62 +1447,53 @@
         if (confirm('Are you sure you want to log out of Vidyadaan School ERP?')) {
           localStorage.removeItem(AUTH_SESSION_KEY);
           setAuth({ isAuthenticated: false, user: null });
-          setIsPublicLookup(false);
+          setAppMode('website');
           setView('dashboard');
           notify('Logged out successfully.', 'info');
         }
       };
 
-      // Unauthenticated gate: show Public Lookup OR Login Gate
-      if (!auth.isAuthenticated) {
-        if (isPublicLookup) {
-          return html`
-            <div className="min-h-screen bg-[#F7F8FA] flex flex-col">
-              <!-- Public Lookup Header -->
-              <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-8 flex items-center justify-between no-print shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
-                    <i className="fa-solid fa-graduation-cap"></i>
-                  </div>
-                  <div>
-                    <h1 className="text-sm font-extrabold text-slate-800 leading-none">${S.ngo.name}</h1>
-                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Online Result Verification Portal</p>
-                  </div>
-                </div>
-                <button
-                  onClick=${() => setIsPublicLookup(false)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition shadow"
-                >
-                  <i className="fa-solid fa-arrow-left"></i>
-                  <span>Return to Staff Login</span>
-                </button>
-              </header>
-
-              <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full">
-                <div className="mb-4 text-center">
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
-                    <i className="fa-solid fa-circle-check mr-1 text-emerald-600"></i> Public Student Result Lookup
-                  </span>
-                </div>
-                <${PublicPortalView} S=${S} setActiveModal=${setActiveModal} setModalData=${setModalData}/>
-              </main>
-
-              <!-- Modals for Report Card Print in Public Mode -->
-              ${activeModal === 'report_card' && html`<${ReportCardModal} S=${S} student=${modalData} close=${() => setActiveModal(null)}/>`}
-            </div>
-          `;
-        }
-
+      // 1. PUBLIC WEBSITE MODE (Default user-facing homepage)
+      if (appMode === 'website') {
         return html`
           <div>
             ${toast && html`
-              <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white transition-all transform animate-bounce ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}}>
+              <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white transition-all transform animate-bounce ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}">
                 <i className=${toast.type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}></i>
                 <span>${toast.msg}</span>
                 <button onClick=${() => setToast(null)} className="ml-2 hover:opacity-75"><i className="fa-solid fa-xmark"></i></button>
               </div>
             `}
-            <${LoginView} S=${S} onLogin=${handleLogin} onOpenPublicLookup=${() => setIsPublicLookup(true)} notify=${notify}/>
+            <${PublicWebsiteView}
+              S=${S}
+              onOpenErp=${() => setAppMode('erp')}
+              setActiveModal=${setActiveModal}
+              setModalData=${setModalData}
+              notify=${notify}
+            />
+            <!-- Modals for Report Card Print in Public Website Mode -->
+            ${activeModal === 'report_card' && html`<${ReportCardModal} S=${S} student=${modalData} close=${() => setActiveModal(null)}/>`}
+          </div>
+        `;
+      }
+
+      // 2. ERP MODE - Unauthenticated Gate
+      if (!auth.isAuthenticated) {
+        return html`
+          <div>
+            ${toast && html`
+              <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white transition-all transform animate-bounce ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}">
+                <i className=${toast.type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}></i>
+                <span>${toast.msg}</span>
+                <button onClick=${() => setToast(null)} className="ml-2 hover:opacity-75"><i className="fa-solid fa-xmark"></i></button>
+              </div>
+            `}
+            <${LoginView}
+              S=${S}
+              onLogin=${handleLogin}
+              onBackToWebsite=${() => setAppMode('website')}
+              notify=${notify}
+            />
           </div>
         `;
       }
@@ -685,6 +1595,21 @@
               </div>
             </div>
 
+            <!-- View Public Website Button -->
+            <div className="p-2 border-b border-slate-100 bg-slate-50/40">
+              <button
+                onClick=${() => setAppMode('website')}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition shadow-sm cursor-pointer"
+                title="View Vidyadaan Public School Website"
+              >
+                <span className="flex items-center gap-2">
+                  <i className="fa-solid fa-globe text-emerald-600"></i>
+                  <span>Public School Website</span>
+                </span>
+                <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-emerald-600"></i>
+              </button>
+            </div>
+
             <!-- Scrollable Nav Items -->
             <nav className="flex-1 overflow-y-auto p-3 space-y-4">
               ${menuItems.map(sec => html`
@@ -750,6 +1675,14 @@
 
               <!-- Top Right User Badge & Logout -->
               <div className="flex items-center gap-3">
+                <button
+                  onClick=${() => setAppMode('website')}
+                  title="Switch to Public School Website"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 text-xs font-bold transition shadow-sm cursor-pointer"
+                >
+                  <i className="fa-solid fa-globe text-emerald-600"></i>
+                  <span className="hidden sm:inline">School Website</span>
+                </button>
                 <span className="hidden sm:inline-block px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold">
                   <i className="fa-solid fa-hand-holding-heart mr-1"></i> Free Education Initiative
                 </span>
