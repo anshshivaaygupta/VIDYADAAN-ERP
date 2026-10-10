@@ -1,262 +1,2503 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>VIDYADAAN - School Result System</title>
-<script src="https://cdn.tailwindcss.com/3.4.17"></script>
-<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
-<style>
-:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-@media print{body{background:#fff}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>VIDYADAAN NGO - Complete School Management ERP</title>
+  <link rel="icon" href="public/logo.png" type="image/png">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            lamaSky: '#C3EBFA',
+            lamaSkyLight: '#EDF9FD',
+            lamaPurple: '#CFCEFF',
+            lamaPurpleLight: '#F1F0FF',
+            lamaYellow: '#FAE27C',
+            lamaYellowLight: '#FEFCE8',
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <!-- React 18 & HTM -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Print Stylesheet for Official Documents */
+    @media print {
+      body { background: #fff !important; color: #000 !important; margin: 0; padding: 0; }
+      .no-print, header, nav, aside, .sidebar-container, .topbar-container, button.no-print {
+        display: none !important;
+      }
+      .print-area {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .page-break { page-break-after: always; }
+    }
+  </style>
 </head>
-<body>
-<div id="root"></div>
-<script>
-const {useState,useEffect}=React;
-const html=htm.bind(React.createElement);
-const KEY='vidyadaan_erp_v1';
-const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
-const lbl=c=>c.section?`${c.name} ${c.section}`:c.name;
-const ALIAS={maths:'mathematics',math:'mathematics',sci:'science',eng:'english',sst:'socialscience',socialstudies:'socialscience',comp:'computer',hin:'hindi',phy:'physics',chem:'chemistry',bio:'biology'};
-const skey=n=>{const k=String(n).toLowerCase().replace(/[^a-z0-9]/g,'');return ALIAS[k]||k};
-const clash=(subs,n,skip)=>{const k=skey(n);return subs.find(s=>s.id!==skip&&(o=>o===k||(Math.min(o.length,k.length)>=3&&(o.startsWith(k)||k.startsWith(o))))(skey(s.n)))};
-const normDob=s=>{s=String(s).trim();let m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;m=s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);return m?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:s};
-const grade=(m,s)=>{if(m<s.pass)return'F';const p=m/s.max*100;return p>=90?'A+':p>=75?'A':p>=60?'B':'C'};
+<body class="bg-[#F7F8FA] text-slate-800 antialiased min-h-screen">
+  <div id="root"></div>
 
-// Clean empty database as requested
-const seed=()=>({
-  school:{name:'VIDYADAAN ERP',addr:'',session:'2025-26'},
-  classes:[],
-  subjects:[],
-  students:[],
-  exam:{name:'Annual Examination 2026',published:false,locked:false},
-  marks:{},
-  nid:1
-});
+  <script>
+    const { useState, useEffect, useMemo, useRef } = React;
+    const html = htm.bind(React.createElement);
+    const STORAGE_KEY = 'vidyadaan_ngo_complete_erp_v3';
 
-const demoData=()=>({
-  school:{name:'VIDYADAAN ERP',addr:'Main Campus, Education City',session:'2025-26'},
-  classes:[{id:1,name:'Class 10',section:'A'},{id:2,name:'Class 9',section:'B'}],
-  subjects:[{id:3,n:'Mathematics',max:100,pass:33},{id:4,n:'Science',max:100,pass:33},{id:5,n:'English',max:100,pass:33}],
-  students:[{id:6,roll:'101',name:'Aarav Kumar',father:'Ramesh Kumar',dob:'2010-05-14',cid:1},{id:7,roll:'102',name:'Priya Singh',father:'Suresh Singh',dob:'2010-08-02',cid:1},{id:8,roll:'103',name:'Rohit Yadav',father:'Mahesh Yadav',dob:'2010-01-27',cid:1}],
-  exam:{name:'Annual Examination 2026',published:true,locked:false},
-  marks:{'6|3':{m:92},'6|4':{m:85},'6|5':{m:78},'7|3':{m:64},'7|4':{m:30},'7|5':{m:71},'8|3':{ab:1},'8|4':{m:55},'8|5':{m:49}},
-  nid:9
-});
+    // Normalize Date helper
+    const normDob = (s) => {
+      s = String(s || '').trim();
+      let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+      if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+      return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : s;
+    };
 
-const load=()=>{
-  try{
-    localStorage.removeItem('srs_v3');
-    const saved = localStorage.getItem(KEY);
-    return saved ? JSON.parse(saved) : seed();
-  }catch(e){
-    return seed();
-  }
-};
+    // CBSE 9-Point Grading Scale Calculator
+    const getCbseGrade = (marks, max = 100) => {
+      if (marks === null || marks === undefined || marks === '' || isNaN(marks)) {
+        return { grade: '-', gp: '-', desc: 'Pending' };
+      }
+      const p = (marks / max) * 100;
+      if (p >= 91) return { grade: 'A1', gp: '10.0', desc: 'Outstanding' };
+      if (p >= 81) return { grade: 'A2', gp: '9.0', desc: 'Excellent' };
+      if (p >= 71) return { grade: 'B1', gp: '8.0', desc: 'Very Good' };
+      if (p >= 61) return { grade: 'B2', gp: '7.0', desc: 'Good' };
+      if (p >= 51) return { grade: 'C1', gp: '6.0', desc: 'Fair' };
+      if (p >= 41) return { grade: 'C2', gp: '5.0', desc: 'Average' };
+      if (p >= 33) return { grade: 'D', gp: '4.0', desc: 'Passed' };
+      if (p >= 21) return { grade: 'E1', gp: '0.0', desc: 'Needs Improvement' };
+      return { grade: 'E2', gp: '0.0', desc: 'Failed' };
+    };
 
-const inp='w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100 disabled:text-slate-500';
-const btn='rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700';
-const btnS='rounded-md px-2 py-1 text-xs font-medium';
-const card='rounded-xl border border-slate-200 bg-white p-5 shadow-sm';
-const th='bg-slate-50 px-3 py-2 text-left text-xs font-semibold text-slate-600';
-const td='border-t border-slate-100 px-3 py-2';
-const lab='mb-1 block text-xs font-medium text-slate-600';
-const tones={g:'bg-emerald-100 text-emerald-700',r:'bg-red-100 text-red-700',a:'bg-amber-100 text-amber-700',s:'bg-slate-100 text-slate-600'};
-const Badge=({t,c})=>html`<span className=${'inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold '+tones[c]}>${t}</span>`;
-const St=({s})=>html`<${Badge} t=${s} c=${s==='PASS'?'g':s==='ABSENT'?'a':s==='PENDING'?'s':'r'}/>`;
-const Note=({m})=>m?html`<div role="status" className=${'rounded-lg border px-3 py-2 text-sm '+(m.c==='r'?'border-red-200 bg-red-50 text-red-700':m.c==='g'?'border-emerald-200 bg-emerald-50 text-emerald-700':'border-indigo-200 bg-indigo-50 text-indigo-800')}>${m.t}</div>`:null;
-const Table=({head,children})=>html`<div className="mt-4 max-h-80 overflow-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="sticky top-0"><tr>${head.map(h=>html`<th key=${h} className=${th}>${h}</th>`)}</tr></thead><tbody>${children}</tbody></table></div>`;
-const Empty=({n,t})=>html`<tr><td colSpan=${n} className=${td+' text-slate-500'}>${t}</td></tr>`;
-const Actions=({ed,onEdit,onSave,onCancel,onDel})=>html`<td className=${td+' whitespace-nowrap'}>${ed?html`<button onClick=${onSave} className=${btnS+' text-indigo-700 hover:bg-indigo-50'}>Save</button><button onClick=${onCancel} className=${btnS+' text-slate-600 hover:bg-slate-100'}>Cancel</button>`:html`<button onClick=${onEdit} className=${btnS+' text-indigo-700 hover:bg-indigo-50'}>Edit</button>`}<button onClick=${onDel} className=${btnS+' text-red-600 hover:bg-red-50'}>Delete</button></td>`;
+    // Clean initial state (Zero Demo Data!)
+    const getCleanState = () => ({
+      ngo: {
+        name: 'VIDYADAAN NGO (विद्यादान)',
+        tagline: 'Empowering Underprivileged Children through 100% Free & Quality Education',
+        regNo: 'NGO/DL/2021/049182',
+        centerName: 'Vidyadaan Learning Center',
+        address: 'Sector 12, Institutional Area, New Delhi - 110001',
+        phone: '+91 98765 43210',
+        email: 'contact@vidyadaan.org',
+        session: '2025-26',
+        centerHead: 'Director / Project Head',
+        curriculum: 'CBSE Aligned Holistic Curriculum'
+      },
+      classes: [
+        { id: 1, name: 'Class 10', section: 'A', capacity: 30 },
+        { id: 2, name: 'Class 9', section: 'A', capacity: 30 },
+        { id: 3, name: 'Class 8', section: 'A', capacity: 30 },
+        { id: 4, name: 'Class 7', section: 'A', capacity: 30 },
+        { id: 5, name: 'Class 6', section: 'A', capacity: 30 },
+        { id: 6, name: 'Class 5', section: 'A', capacity: 30 }
+      ],
+      subjects: [
+        { id: 101, n: 'English Communicative', code: '101', max: 100, pass: 33 },
+        { id: 102, n: 'Hindi Course-A', code: '002', max: 100, pass: 33 },
+        { id: 103, n: 'Mathematics Standard', code: '041', max: 100, pass: 33 },
+        { id: 104, n: 'Science & Environment', code: '086', max: 100, pass: 33 },
+        { id: 105, n: 'Social Science', code: '087', max: 100, pass: 33 },
+        { id: 106, n: 'Computer / Digital Literacy', code: '402', max: 100, pass: 33 }
+      ],
+      // Completely empty data
+      students: [],
+      teachers: [],
+      parents: [],
+      lessons: [],
+      exams: [
+        { id: 1, title: 'Annual Evaluation Examination 2026', date: '2026-03-15', cid: 1 }
+      ],
+      assignments: [],
+      announcements: [
+        { id: 1, title: 'Welcome to Vidyadaan Free Learning Center', date: '2026-04-01', desc: '100% Free educational materials and books distributed to all enrolled students.' }
+      ],
+      events: [
+        { id: 1, title: 'Science Exhibition & Fair', date: '2026-10-25', time: '10:00 AM - 01:00 PM', desc: 'Hands-on scientific project demonstrations by students.' }
+      ],
+      marks: {},
+      coScholastic: {},
+      attendance: {},
+      nid: 20
+    });
 
-function ClassRow({c,count,onSave,onDel}){
- const [ed,setEd]=useState(false),[n,setN]=useState(c.name),[s,setS]=useState(c.section);
- return html`<tr><td className=${td+' font-medium'}>${ed?html`<input className=${inp} value=${n} onInput=${e=>setN(e.target.value)} aria-label="Class name"/>`:c.name}</td>
- <td className=${td}>${ed?html`<input className=${inp+' w-20'} value=${s} onInput=${e=>setS(e.target.value)} aria-label="Section"/>`:(c.section||'-')}</td><td className=${td}>${count}</td>
- <${Actions} ed=${ed} onEdit=${()=>setEd(true)} onCancel=${()=>{setEd(false);setN(c.name);setS(c.section)}} onSave=${()=>{if(onSave(c.id,n.trim(),s.trim()))setEd(false)}} onDel=${()=>onDel(c.id)}/></tr>`}
+    const loadState = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+        return getCleanState();
+      } catch (e) {
+        return getCleanState();
+      }
+    };
 
-function SubRow({s,onSave,onDel}){
- const [ed,setEd]=useState(false),[n,setN]=useState(s.n),[m,setM]=useState(s.max),[p,setP]=useState(s.pass);
- return html`<tr><td className=${td+' font-medium'}>${ed?html`<input className=${inp} value=${n} onInput=${e=>setN(e.target.value)} aria-label="Subject name"/>`:s.n}</td>
- <td className=${td}>${ed?html`<input type="number" className=${inp+' w-24'} value=${m} onInput=${e=>setM(e.target.value)} aria-label="Max marks"/>`:s.max}</td>
- <td className=${td}>${ed?html`<input type="number" className=${inp+' w-24'} value=${p} onInput=${e=>setP(e.target.value)} aria-label="Passing marks"/>`:s.pass}</td>
- <${Actions} ed=${ed} onEdit=${()=>setEd(true)} onCancel=${()=>{setEd(false);setN(s.n);setM(s.max);setP(s.pass)}} onSave=${()=>{if(onSave(s.id,n.trim(),+m,+p))setEd(false)}} onDel=${()=>onDel(s.id)}/></tr>`}
+    // Shared Reusable Card Component
+    const Card = ({ children, className = '' }) => html`
+      <div className=${'bg-white rounded-2xl border border-slate-100 shadow-sm p-5 ' + className}>
+        ${children}
+      </div>
+    `;
 
-function Admin({S,set}){
- const [msg,setMsg]=useState(null),[cn,setCn]=useState(''),[cs,setCs]=useState(''),[sn,setSn]=useState(''),[sm,setSm]=useState(100),[sp,setSp]=useState(33),[csv,setCsv]=useState('');
- const ok=t=>setMsg({t,c:'g'}),er=t=>setMsg({t,c:'r'});
- const cnt=id=>(S.students||[]).filter(s=>s.cid===id).length;
- const dupC=(n,s,skip)=>(S.classes||[]).some(c=>c.id!==skip&&norm(c.name)===norm(n)&&norm(c.section)===norm(s));
- const addC=()=>{const n=cn.trim(),s=cs.trim();if(!n)return er('Enter a class name.');if(dupC(n,s))return er(`${n} ${s} already exists.`);set(p=>({classes:[...(p.classes||[]),{id:p.nid,name:n,section:s}],nid:p.nid+1}));setCn('');setCs('');ok(`Added class ${n} ${s}.`)};
- const saveC=(id,n,s)=>{if(!n){er('Class name cannot be empty.');return false}if(dupC(n,s,id)){er('Another class already has that name and section.');return false}set(p=>({classes:(p.classes||[]).map(c=>c.id===id?{...c,name:n,section:s}:c)}));ok('Class updated.');return true};
- const delC=id=>{const ids=(S.students||[]).filter(s=>s.cid===id).map(s=>s.id);set(p=>({classes:(p.classes||[]).filter(c=>c.id!==id),students:(p.students||[]).filter(s=>s.cid!==id),marks:Object.fromEntries(Object.entries(p.marks||{}).filter(([k])=>!ids.includes(+k.split('|')[0])))}));ok(`Class deleted${ids.length?` with ${ids.length} students`:''}.`)};
- const chk=(n,m,p,skip)=>{if(!n||!(m>0)||!(p>=0)||p>m){er('Enter a subject name, max marks above 0, and passing marks between 0 and max.');return false}const d=clash(S.subjects||[],n,skip);if(d){er(`"${n}" matches the existing subject "${d.n}". Subjects can't be added twice.`);return false}return true};
- const addS=()=>{const n=sn.trim().replace(/\s+/g,' '),m=+sm,p=+sp;if(!chk(n,m,p))return;set(q=>({subjects:[...(q.subjects||[]),{id:q.nid,n,max:m,pass:p}],nid:q.nid+1}));setSn('');ok(`Added subject ${n}.`)};
- const saveS=(id,n,m,p)=>{if(!chk(n,m,p,id))return false;set(q=>({subjects:(q.subjects||[]).map(s=>s.id===id?{...s,n,max:m,pass:p}:s)}));ok('Subject updated.');return true};
- const delS=id=>{set(p=>({subjects:(p.subjects||[]).filter(s=>s.id!==id),marks:Object.fromEntries(Object.entries(p.marks||{}).filter(([k])=>+k.split('|')[1]!==id))}));ok('Subject deleted.')};
- const delSt=id=>{set(p=>({students:(p.students||[]).filter(s=>s.id!==id),marks:Object.fromEntries(Object.entries(p.marks||{}).filter(([k])=>+k.split('|')[0]!==id))}));ok('Student deleted.')};
- const imp=txt=>{let classes=[...(S.classes||[])],students=[...(S.students||[])],nid=S.nid,n=0;const bad=[];
-  txt.split(/\r?\n/).forEach((ln,i)=>{if(!ln.trim())return;const p=ln.split(',').map(x=>x.trim().replace(/^"|"$/g,''));
-   if(i===0&&/roll/i.test(p[0]))return;
-   if(p.length<5||!p[0]||!p[1]||!p[4])return bad.push(`line ${i+1} incomplete`);
-   const d=normDob(p[3]);if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return bad.push(`line ${i+1} bad date`);
-   let c=classes.find(c=>norm(lbl(c))===norm(p[4]))||(m=>m.length===1?m[0]:null)(classes.filter(c=>norm(c.name)===norm(p[4])));
-   if(!c){c={id:nid++,name:p[4],section:''};classes.push(c)}
-   if(students.some(s=>s.roll===p[0]&&s.cid===c.id))return bad.push(`line ${i+1} duplicate roll`);
-   students.push({id:nid++,roll:p[0],name:p[1],father:p[2],dob:d,cid:c.id});n++});
-  set({classes,students,nid});(n?ok:er)(`Imported ${n} student${n===1?'':'s'}.${bad.length?` Skipped ${bad.length}: ${bad.slice(0,4).join(', ')}.`:''}`);if(n)setCsv('')};
- const cells=(S.students||[]).length*(S.subjects||[]).length,filled=(S.students||[]).reduce((a,s)=>a+(S.subjects||[]).filter(u=>{const k=(S.marks||{})[s.id+'|'+u.id]||{};return k.ab||k.m!=null}).length,0);
- const stat=(l,v)=>html`<div className=${card+' !p-4'} key=${l}><div className="text-xs text-slate-500">${l}</div><div className="mt-1 text-2xl font-bold">${v}</div></div>`;
- const ex=S.exam||{},setEx=o=>set(p=>({exam:{...(p.exam||{}),...o}}));
- const sch=S.school||{name:'VIDYADAAN ERP',addr:'',session:'2025-26'},setSch=o=>set(p=>({school:{...(p.school||{}),...o}}));
+    // Shared Reusable Metric Card (Lama Dev Style)
+    const UserCard = ({ type, count, label, bgClass }) => {
+      const icons = {
+        student: 'public/student.png',
+        teacher: 'public/teacher.png',
+        parent: 'public/parent.png',
+        class: 'public/class.png'
+      };
+      return html`
+        <div className=${`rounded-2xl p-4 flex-1 min-w-[130px] ${bgClass} shadow-sm`}>
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] bg-white px-2 py-1 rounded-full text-slate-700 font-bold">2025/26</span>
+            <img src=${icons[type] || 'public/more.png'} alt="" className="w-5 h-5 opacity-70" onError=${e => e.target.style.display='none'}/>
+          </div>
+          <h2 className="text-2xl font-bold my-3 text-slate-900">${count}</h2>
+          <h3 className="capitalize text-xs font-semibold text-slate-600">${label}</h3>
+        </div>
+      `;
+    };
 
- const clearDb=()=>{
-  if(window.confirm('Are you sure you want to completely clear the database? All classes, subjects, students, and marks will be removed.')){
-    set(seed());
-    localStorage.removeItem(KEY);
-    ok('Database cleared successfully! Clean empty state ready.');
-  }
- };
+    // ==========================================
+    // MAIN APP COMPONENT
+    // ==========================================
+    function App() {
+      const [S, setS] = useState(loadState);
+      const [role, setRole] = useState('admin'); // 'admin', 'teacher', 'public'
+      const [view, setView] = useState('dashboard'); // 'dashboard', 'teachers', 'students', 'classes', 'subjects', 'results', 'attendance', 'assignments', 'announcements', 'events', 'tc_studio', 'settings'
+      const [sidebarOpen, setSidebarOpen] = useState(false);
+      const [activeModal, setActiveModal] = useState(null); // 'student_form', 'report_card', 'tc', 'id_card', 'event_form', 'announcement_form'
+      const [modalData, setModalData] = useState(null);
+      const [toast, setToast] = useState(null);
 
- const loadDemo=()=>{
-  set(demoData());
-  ok('Demo sample data loaded.');
- };
+      // Save to localStorage automatically
+      useEffect(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
+        } catch (e) {
+          console.warn('Storage error:', e);
+        }
+      }, [S]);
 
- return html`<div className="space-y-4"><${Note} m=${msg}/>
- <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">${stat('Students',(S.students||[]).length)}${stat('Classes',(S.classes||[]).length)}${stat('Subjects',(S.subjects||[]).length)}${stat('Marks entered',cells?Math.round(filled/cells*100)+'%':'0%')}</div>
+      const notify = (msg, type = 'success') => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 4000);
+      };
 
- <section className=${card}><h2 className="text-base font-semibold">School & Examination Details</h2>
-  <div className="mt-3 grid gap-3 sm:grid-cols-3">
-   <div><label className=${lab} htmlFor="snm">School Name</label><input id="snm" className=${inp} value=${sch.name} onInput=${e=>setSch({name:e.target.value})} placeholder="School Name"/></div>
-   <div><label className=${lab} htmlFor="sad">School Address</label><input id="sad" className=${inp} value=${sch.addr} onInput=${e=>setSch({addr:e.target.value})} placeholder="Address / Location"/></div>
-   <div><label className=${lab} htmlFor="ssn">Session</label><input id="ssn" className=${inp} value=${sch.session} onInput=${e=>setSch({session:e.target.value})} placeholder="2025-26"/></div>
-  </div>
-  <div className="mt-3">
-   <label className=${lab} htmlFor="en">Exam Name</label><input id="en" className=${inp+' sm:max-w-sm'} value=${ex.name} onInput=${e=>setEx({name:e.target.value})} placeholder="Exam Name"/>
-  </div>
-  <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-   <div className="flex flex-wrap gap-6 text-sm">
-    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="h-5 w-5" checked=${!!ex.locked} onChange=${e=>setEx({locked:e.target.checked})}/>Lock marks entry <${Badge} t=${ex.locked?'Locked':'Open'} c=${ex.locked?'r':'g'}/></label>
-    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="h-5 w-5" checked=${!!ex.published} onChange=${e=>setEx({published:e.target.checked})}/>Publish results <${Badge} t=${ex.published?'Published':'Draft'} c=${ex.published?'g':'a'}/></label>
-   </div>
-   <div className="flex items-center gap-2">
-    <button className=${btnS+' text-slate-600 bg-slate-100 hover:bg-slate-200'} onClick=${loadDemo}>Load Demo Data</button>
-    <button className=${btnS+' text-red-700 bg-red-100 hover:bg-red-200 font-semibold'} onClick=${clearDb}>Clear Entire Database</button>
-   </div>
-  </div>
- </section>
+      const set = (updater) => {
+        setS((prev) => ({
+          ...prev,
+          ...(typeof updater === 'function' ? updater(prev) : updater)
+        }));
+      };
 
- <section className=${card}><h2 className="text-base font-semibold">Classes</h2>
-  <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_8rem_auto]"><input className=${inp} placeholder="Class name, e.g. Class 10" aria-label="Class name" value=${cn} onInput=${e=>setCn(e.target.value)}/><input className=${inp} placeholder="Section, e.g. A" aria-label="Section" value=${cs} onInput=${e=>setCs(e.target.value)}/><button className=${btn} onClick=${addC}>Add class</button></div>
-  <${Table} head=${['Class Name','Section','Total Students','Actions']}>${(S.classes||[]).length?(S.classes||[]).map(c=>html`<${ClassRow} key=${c.id} c=${c} count=${cnt(c.id)} onSave=${saveC} onDel=${delC}/>`):html`<${Empty} n=${4} t="No classes yet. Add one above."/>`}<//></section>
+      // Menu structure inspired by the top GitHub School ERP
+      const menuItems = [
+        {
+          title: 'MENU',
+          items: [
+            { id: 'dashboard', label: 'Dashboard', icon: 'public/home.png', fa: 'fa-house' },
+            { id: 'students', label: 'Students (SIS)', icon: 'public/student.png', fa: 'fa-user-graduate' },
+            { id: 'teachers', label: 'Volunteers / Teachers', icon: 'public/teacher.png', fa: 'fa-chalkboard-user' },
+            { id: 'classes', label: 'Classes & Sections', icon: 'public/class.png', fa: 'fa-school' },
+            { id: 'subjects', label: 'Subjects', icon: 'public/subject.png', fa: 'fa-book-open' },
+            { id: 'results', label: 'Evaluation & Results', icon: 'public/result.png', fa: 'fa-square-poll-vertical' },
+            { id: 'attendance', label: 'Attendance Register', icon: 'public/attendance.png', fa: 'fa-clipboard-user' },
+            { id: 'assignments', label: 'Homework / Tasks', icon: 'public/assignment.png', fa: 'fa-book' },
+            { id: 'events', label: 'Events Calendar', icon: 'public/calendar.png', fa: 'fa-calendar-days' },
+            { id: 'announcements', label: 'Notice Board', icon: 'public/announcement.png', fa: 'fa-bullhorn' },
+            { id: 'tc_studio', label: 'TC & ID Card Studio', icon: 'public/exam.png', fa: 'fa-id-card' }
+          ]
+        },
+        {
+          title: 'OTHER',
+          items: [
+            { id: 'public_portal', label: 'Public Result Portal', icon: 'public/view.png', fa: 'fa-globe' },
+            { id: 'settings', label: 'NGO Settings & Backup', icon: 'public/setting.png', fa: 'fa-sliders' }
+          ]
+        }
+      ];
 
- <section className=${card}><h2 className="text-base font-semibold">Subjects</h2>
-  <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_7rem_7rem_auto]"><input className=${inp} placeholder="Subject name, e.g. Mathematics" aria-label="Subject name" value=${sn} onInput=${e=>setSn(e.target.value)}/><input type="number" className=${inp} aria-label="Max marks" value=${sm} onInput=${e=>setSm(e.target.value)}/><input type="number" className=${inp} aria-label="Passing marks" value=${sp} onInput=${e=>setSp(e.target.value)}/><button className=${btn} onClick=${addS}>Add subject</button></div>
-  <${Table} head=${['Subject Name','Max Marks','Passing Marks','Actions']}>${(S.subjects||[]).length?(S.subjects||[]).map(s=>html`<${SubRow} key=${s.id} s=${s} onSave=${saveS} onDel=${delS}/>`):html`<${Empty} n=${4} t="No subjects yet. Add one above."/>`}<//></section>
+      return html`
+        <div className="flex h-screen overflow-hidden">
+          <!-- Notification Toast -->
+          ${toast && html`
+            <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white transition-all transform animate-bounce ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}">
+              <i className=${toast.type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}></i>
+              <span>${toast.msg}</span>
+              <button onClick=${() => setToast(null)} className="ml-2 hover:opacity-75"><i className="fa-solid fa-xmark"></i></button>
+            </div>
+          `}
 
- <section className=${card}><h2 className="text-base font-semibold">Students</h2><p className="mt-1 text-sm text-slate-500">Upload a CSV or paste rows: Roll Number, Full Name, Father Name, DOB (YYYY-MM-DD or DD/MM/YYYY), Class. A header row is skipped.</p>
-  <textarea rows="3" className=${inp+' mt-3 font-mono'} placeholder="101,Aarav Kumar,Ramesh Kumar,2010-05-14,Class 10 A" aria-label="CSV rows" value=${csv} onInput=${e=>setCsv(e.target.value)}></textarea>
-  <div className="mt-2 flex flex-wrap items-center gap-2"><input type="file" accept=".csv,text/csv" aria-label="CSV file" className="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm" onChange=${e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>imp(String(r.result).replace(/^\uFEFF/,''));r.readAsText(f);e.target.value=''}}/><button className=${btn} onClick=${()=>imp(csv)}>Import students</button></div>
-  <${Table} head=${['Roll','Name','Father','Class','Actions']}>${(S.students||[]).length?(S.students||[]).map(s=>html`<tr key=${s.id}><td className=${td}>${s.roll}</td><td className=${td+' font-medium'}>${s.name}</td><td className=${td}>${s.father}</td><td className=${td}>${lbl((S.classes||[]).find(c=>c.id===s.cid)||{name:'?'})}</td><td className=${td}><button className=${btnS+' text-red-600 hover:bg-red-50'} onClick=${()=>delSt(s.id)}>Delete</button></td></tr>`):html`<${Empty} n=${5} t="No students yet. Import CSV or paste rows above."/>`}<//></section></div>`}
+          <!-- Sidebar (Top GitHub School ERP Style) -->
+          <aside className=${`sidebar-container fixed inset-y-0 left-0 z-40 w-[14%] min-w-[230px] bg-white border-r border-slate-100 flex flex-col transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <!-- Logo & Brand Header -->
+            <div className="h-16 px-4 flex items-center justify-between border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <img src="public/logo.png" alt="logo" className="w-8 h-8 rounded-lg" onError=${e => { e.target.onerror=null; e.target.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%2310B981"/><text x="50" y="65" font-size="45" text-anchor="middle" fill="white">V</text></svg>'; }}/>
+                <div>
+                  <h1 className="font-extrabold text-sm text-slate-800 leading-none">VIDYADAAN</h1>
+                  <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Free School ERP</span>
+                </div>
+              </div>
+              <button onClick=${() => setSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-slate-600">
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
 
-function Teacher({S,set}){
- const classes = S.classes || [];
- const subjects = S.subjects || [];
- const [cid,setCid]=useState(classes[0]?.id);
- const [sid,setSid]=useState(subjects[0]?.id);
- const [warn,setWarn]=useState('');
+            <!-- Role Selector -->
+            <div className="p-3 border-b border-slate-100 bg-slate-50/70">
+              <div className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 px-1">Role Switcher</div>
+              <div className="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-xl text-center text-[11px] font-bold">
+                <button
+                  onClick=${() => { setRole('admin'); setSidebarOpen(false); }}
+                  className=${`py-1 rounded-lg transition ${role === 'admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  Admin
+                </button>
+                <button
+                  onClick=${() => { setRole('teacher'); setView('results'); setSidebarOpen(false); }}
+                  className=${`py-1 rounded-lg transition ${role === 'teacher' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  Teacher
+                </button>
+                <button
+                  onClick=${() => { setRole('public'); setView('public_portal'); setSidebarOpen(false); }}
+                  className=${`py-1 rounded-lg transition ${role === 'public' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  Public
+                </button>
+              </div>
+            </div>
 
- const activeCid = cid ?? classes[0]?.id;
- const activeSid = sid ?? subjects[0]?.id;
- const cl = classes.find(c=>c.id===+activeCid) || classes[0];
- const sub = subjects.find(s=>s.id===+activeSid) || subjects[0];
+            <!-- Scrollable Nav Items -->
+            <nav className="flex-1 overflow-y-auto p-3 space-y-4">
+              ${menuItems.map(sec => html`
+                <div key=${sec.title} className="space-y-1">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1">${sec.title}</div>
+                  ${sec.items.map(item => {
+                    const active = view === item.id;
+                    return html`
+                      <button
+                        key=${item.id}
+                        onClick=${() => { setView(item.id); setSidebarOpen(false); }}
+                        className=${`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                          active
+                            ? 'bg-lamaSky text-slate-900 font-bold shadow-sm'
+                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                        }`}
+                      >
+                        <img src=${item.icon} alt="" className="w-4 h-4 opacity-75" onError=${e => e.target.style.display='none'}/>
+                        <span>${item.label}</span>
+                      </button>
+                    `;
+                  })}
+                </div>
+              `)}
+            </nav>
 
- if(!cl||!sub)return html`<div className=${card}><p className="font-medium text-slate-700">No classes or subjects configured.</p><p className="mt-1 text-sm text-slate-500">Please add at least one class and one subject in the <strong>Admin Dashboard</strong> first to enter marks.</p></div>`;
+            <!-- Bottom Badge -->
+            <div className="p-3 border-t border-slate-100 bg-slate-50 text-[10px] text-slate-500 flex items-center justify-between">
+              <span>Session ${S.ngo.session}</span>
+              <span className="font-bold text-emerald-600">● 100% Free NGO</span>
+            </div>
+          </aside>
 
- const list = (S.students || []).filter(s=>s.cid===cl.id);
- const L = !!(S.exam && S.exam.locked);
- const marks = S.marks || {};
- const key = s => s.id+'|'+sub.id;
- const get = s => marks[key(s)] || {};
- const put = (s,v) => set(p=>({marks:{...(p.marks||{}),[key(s)]:v}}));
- const done = list.filter(s=>get(s).ab || get(s).m!=null).length;
+          <!-- Main Layout Window -->
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F7F8FA]">
+            <!-- Topbar (GitHub ERP Style) -->
+            <header className="h-16 bg-white border-b border-slate-100 px-4 md:px-6 flex items-center justify-between gap-4 no-print">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick=${() => setSidebarOpen(!sidebarOpen)}
+                  className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+                >
+                  <i className="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 leading-none capitalize">
+                    ${view.replace('_', ' ')}
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1 hidden sm:block">
+                    ${S.ngo.name} • ${S.ngo.centerName}
+                  </p>
+                </div>
+              </div>
 
- return html`<section className=${card}><div className="flex items-center justify-between gap-2"><h2 className="text-base font-semibold">Marks entry grid</h2><${Badge} t=${L?'Locked':'Open for entry'} c=${L?'r':'g'}/></div>
- ${L?html`<div className="mt-3"><${Note} m=${{t:'Marks Entry Locked by Admin. All fields are read-only.',c:'r'}}/></div>`:null}
- <div className="mt-3 grid gap-3 sm:grid-cols-2">
-  <div><label className=${lab} htmlFor="tc">Class</label><select id="tc" className=${inp} value=${cl.id} onChange=${e=>{setCid(+e.target.value);setWarn('')}}>${classes.map(c=>html`<option key=${c.id} value=${c.id}>${lbl(c)}</option>`)}</select></div>
-  <div><label className=${lab} htmlFor="ts">Subject</label><select id="ts" className=${inp} value=${sub.id} onChange=${e=>{setSid(+e.target.value);setWarn('')}}>${subjects.map(s=>html`<option key=${s.id} value=${s.id}>${s.n}</option>`)}</select></div>
- </div>
- ${warn?html`<div className="mt-3"><${Note} m=${{t:warn,c:'r'}}/></div>`:null}
- <${Table} head=${['Roll','Student','Marks (max '+sub.max+')','Absent']}>${list.length?list.map(s=>{const k=get(s);return html`<tr key=${s.id}><td className=${td}>${s.roll}</td><td className=${td+' font-medium'}>${s.name}</td>
-  <td className=${td}><input type="number" min="0" max=${sub.max} className=${inp+' w-28'} aria-label=${'Marks for '+s.name} disabled=${L||!!k.ab} value=${k.m??''} onInput=${e=>{const v=e.target.value;if(v===''){setWarn('');return put(s,{})}if(+v<0||+v>sub.max){setWarn(`${s.name}: marks must be between 0 and ${sub.max}.`);return}setWarn('');put(s,{m:+v})}}/></td>
-  <td className=${td}><input type="checkbox" className="h-4 w-4" aria-label=${s.name+' absent'} disabled=${L} checked=${!!k.ab} onChange=${e=>put(s,e.target.checked?{ab:1}:{})}/></td></tr>`}):html`<${Empty} n=${4} t="No students in this class. Import some in the Admin Dashboard."/>`}<//>
- <p className="mt-3 text-sm text-slate-500" aria-live="polite">${done} of ${list.length} entered. Changes save automatically.</p></section>`}
+              <!-- Top Right User Badge -->
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:inline-block px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold">
+                  <i className="fa-solid fa-hand-holding-heart mr-1"></i> Free Education Initiative
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700">
+                    ${role === 'admin' ? 'AD' : role === 'teacher' ? 'TR' : 'PB'}
+                  </div>
+                  <div className="hidden md:block text-left text-xs leading-tight">
+                    <div className="font-bold text-slate-800 capitalize">${role} Portal</div>
+                    <div className="text-[10px] text-slate-400">Vidyadaan NGO</div>
+                  </div>
+                </div>
+              </div>
+            </header>
 
-function Sheet({S,st}){
- let tot=0,max=0,pass=true;
- const cl=(S.classes||[]).find(c=>c.id===st.cid)||{name:''};
- const subs=S.subjects||[];
- const marks=S.marks||{};
- const rows=subs.map(s=>{const k=marks[st.id+'|'+s.id]||{};max+=s.max;let mo,g,t;
-  if(k.ab){mo='AB';g='-';t='ABSENT';pass=false}else if(k.m==null){mo='-';g='-';t='PENDING';pass=false}else{mo=k.m;tot+=k.m;g=grade(k.m,s);t=k.m>=s.pass?'PASS':'FAIL';if(t==='FAIL')pass=false}
-  return html`<tr key=${s.id}><td className=${td+' font-medium'}>${s.n}</td><td className=${td}>${s.max}</td><td className=${td}>${s.pass}</td><td className=${td+' font-semibold'}>${mo}</td><td className=${td}>${g}</td><td className=${td}><${St} s=${t}/></td></tr>`});
- const box=(l,v)=>html`<div className="rounded-lg bg-slate-50 p-3"><div className="text-xs text-slate-500">${l}</div><div className="mt-1 text-lg font-bold">${v}</div></div>`;
- const f=(l,v)=>html`<div><span className="text-slate-500">${l}: </span><span className="font-medium">${v}</span></div>`;
- const sch=S.school||{name:'VIDYADAAN ERP',addr:'',session:'2025-26'};
- const ex=S.exam||{name:'Annual Examination'};
- return html`<section className=${card+' print:border-0 print:p-0 print:shadow-none'}><div className="rounded-lg border-2 border-slate-800 p-5 print:border-black">
-  <div className="border-b-2 border-slate-800 pb-3 text-center"><h2 className="text-xl font-bold">${sch.name}</h2>${sch.addr?html`<p className="text-sm text-slate-600">${sch.addr}</p>`:null}<p className="mt-1 text-sm font-semibold">${ex.name} ${sch.session?`(Session ${sch.session})`:''}</p></div>
-  <div className="my-4 grid grid-cols-2 gap-1 text-sm">${f('Name',st.name)}${f('Roll no',st.roll)}${f("Father's name",st.father)}${f('Class',lbl(cl))}</div>
-  <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>${['Subject','Max','Pass','Obtained','Grade','Status'].map(h=>html`<th key=${h} className=${th}>${h}</th>`)}</tr></thead><tbody>${rows}</tbody></table></div>
-  <div className="mt-4 grid grid-cols-3 gap-3 text-center">${box('Total',tot+' / '+max)}${box('Percentage',(max?tot/max*100:0).toFixed(2)+'%')}${box('Result',html`<${St} s=${pass?'PASS':'FAIL'}/>`)}</div>
-  <p className="mt-4 text-xs text-slate-500">Verification ID: ${(ex.name||'EXAM').replace(/\W+/g,'').slice(0,6).toUpperCase()}-${st.cid}-${st.roll}. Grades: A+ 90%+, A 75%+, B 60%+, C pass, F fail. AB = absent.</p></div>
-  <button onClick=${()=>window.print()} className=${btn+' mt-4 print:hidden'}>Print / Save as PDF</button></section>`}
+            <!-- Scrollable Page Views -->
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
+              ${view === 'dashboard' && html`<${DashboardView} S=${S} set=${set} setView=${setView} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+              ${view === 'students' && html`<${StudentsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+              ${view === 'teachers' && html`<${TeachersView} S=${S} set=${set} notify=${notify}/>`}
+              ${view === 'classes' && html`<${ClassesView} S=${S} set=${set} notify=${notify}/>`}
+              ${view === 'subjects' && html`<${SubjectsView} S=${S} set=${set} notify=${notify}/>`}
+              ${view === 'results' && html`<${ResultsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+              ${view === 'attendance' && html`<${AttendanceView} S=${S} set=${set} notify=${notify}/>`}
+              ${view === 'assignments' && html`<${AssignmentsView} S=${S} set=${set} notify=${notify}/>`}
+              ${view === 'events' && html`<${EventsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+              ${view === 'announcements' && html`<${AnnouncementsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+              ${view === 'tc_studio' && html`<${TcStudioView} S=${S} setActiveModal=${setActiveModal} setModalData=${setModalData}/>`}
+              ${view === 'public_portal' && html`<${PublicPortalView} S=${S} setActiveModal=${setActiveModal} setModalData=${setModalData}/>`}
+              ${view === 'settings' && html`<${SettingsView} S=${S} set=${set} notify=${notify}/>`}
+            </main>
+          </div>
 
-function Public({S}){
- const classes = S.classes || [];
- const [cid,setCid]=useState(classes[0]?.id),[roll,setRoll]=useState(''),[mode,setMode]=useState('dob'),[v,setV]=useState(''),[err,setErr]=useState(''),[st,setSt]=useState(null);
- const activeCid = cid ?? classes[0]?.id;
- const ex = S.exam || {};
- const go=()=>{
-  setSt(null);setErr('');
-  if(!classes.length)return setErr('No classes or results found.');
-  if(!roll.trim()||!v.trim())return setErr('Enter your roll number and the verification detail.');
-  const f=(S.students||[]).find(s=>s.cid===+activeCid&&s.roll===roll.trim()&&(mode==='dob'?normDob(s.dob)===normDob(v):norm(s.father)===norm(v)));
-  if(!f)return setErr('No student matched. Check the class, roll number and verification detail.');
-  if(!ex.published)return setErr('Results have not been published yet.');
-  setSt(f);
- };
- const tab=m=>'cursor-pointer rounded-md px-3 py-1.5 '+(mode===m?'bg-white shadow-sm':'');
- return html`<div className="space-y-4"><section className=${card+' print:hidden'}><h2 className="text-base font-semibold">Find your result</h2><p className="mb-3 text-sm text-slate-500">${ex.name||'Result Portal'}</p>
- ${ex.published?null:html`<${Note} m=${{t:'Results are not published yet. Please check back later.'}}/>`}
- ${classes.length?html`
- <div className="mt-3 grid gap-3 sm:grid-cols-2"><div><label className=${lab} htmlFor="pc">Class</label><select id="pc" className=${inp} value=${activeCid} onChange=${e=>setCid(+e.target.value)}>${classes.map(c=>html`<option key=${c.id} value=${c.id}>${lbl(c)}</option>`)}</select></div>
- <div><label className=${lab} htmlFor="pr">Roll number</label><input id="pr" inputMode="numeric" className=${inp} value=${roll} onInput=${e=>setRoll(e.target.value)}/></div></div>
- <div className="mt-3 inline-flex rounded-lg bg-slate-100 p-1 text-sm"><button className=${tab('dob')} onClick=${()=>{setMode('dob');setV('')}}>Date of birth</button><button className=${tab('father')} onClick=${()=>{setMode('father');setV('')}}>Father's name</button></div>
- <div className="mt-3 sm:max-w-xs"><label className=${lab} htmlFor="pv">${mode==='dob'?'Date of birth':"Father's name"}</label><input id="pv" type=${mode==='dob'?'date':'text'} className=${inp} value=${v} onInput=${e=>setV(e.target.value)} onKeyDown=${e=>e.key==='Enter'&&go()}/></div>
- <button className=${btn+' mt-4'} onClick=${go}>Show marksheet</button>
- `:html`<div className="mt-3 text-sm text-slate-500">No classes or students added yet. Please configure classes in the Admin Dashboard.</div>`}
- ${err?html`<div className="mt-3"><${Note} m=${{t:err,c:'r'}}/></div>`:null}</section>
- ${st?html`<${Sheet} S=${S} st=${st}/>`:null}</div>`}
+          <!-- Modals & Printable Templates -->
+          ${activeModal === 'student_form' && html`<${StudentFormModal} S=${S} set=${set} student=${modalData} close=${() => setActiveModal(null)} notify=${notify}/>`}
+          ${activeModal === 'report_card' && html`<${ReportCardModal} S=${S} student=${modalData} close=${() => setActiveModal(null)}/>`}
+          ${activeModal === 'tc' && html`<${TransferCertificateModal} S=${S} student=${modalData} close=${() => setActiveModal(null)}/>`}
+          ${activeModal === 'id_card' && html`<${IdCardModal} S=${S} student=${modalData} close=${() => setActiveModal(null)}/>`}
+        </div>
+      `;
+    }
 
-function App(){
- const [S,setS]=useState(load),[tab,setTab]=useState('admin');
- useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},[S]);
- const set=p=>setS(prev=>({...prev,...(typeof p==='function'?p(prev):p)}));
- const T=[['admin','Admin Dashboard'],['teacher','Teacher Portal'],['public','Public Result Portal']];
- const schoolName=(S.school&&S.school.name)||'VIDYADAAN ERP';
- return html`<div><header className="bg-slate-900 text-white print:hidden"><div className="mx-auto max-w-5xl px-4 pt-4"><h1 className="text-lg font-semibold">${schoolName}</h1>
-  <nav className="mt-3 flex gap-1 overflow-x-auto" aria-label="Portals">${T.map(([k,l])=>html`<button key=${k} onClick=${()=>setTab(k)} aria-current=${tab===k} className=${'whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium '+(tab===k?'bg-slate-100 text-slate-900':'text-slate-300 hover:bg-slate-800')}>${l}</button>`)}</nav></div></header>
-  <main className="mx-auto max-w-5xl px-4 py-5">${tab==='admin'?html`<${Admin} S=${S} set=${set}/>`:tab==='teacher'?html`<${Teacher} S=${S} set=${set}/>`:html`<${Public} S=${S}/>`}</main></div>`}
-ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
-</script>
+    // ==========================================
+    // 1. DASHBOARD VIEW (Lama Dev 4-Card + Chart Layout)
+    // ==========================================
+    function DashboardView({ S, setView, setActiveModal }) {
+      const studentCount = S.students.length;
+      const teacherCount = S.teachers.length;
+      const classCount = S.classes.length;
+      const subjectCount = S.subjects.length;
+
+      return html`
+        <div className="space-y-6">
+          <!-- Top 4 User Cards -->
+          <div className="flex gap-4 justify-between flex-wrap">
+            <${UserCard} type="student" count=${studentCount} label="Students Enrolled" bgClass="bg-lamaPurple"/>
+            <${UserCard} type="teacher" count=${teacherCount} label="Volunteer Teachers" bgClass="bg-lamaYellow"/>
+            <${UserCard} type="class" count=${classCount} label="Classes Configured" bgClass="bg-lamaSky"/>
+            <${UserCard} type="parent" count=${subjectCount} label="Curriculum Subjects" bgClass="bg-lamaPurpleLight"/>
+          </div>
+
+          <!-- Quick Action Bar -->
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              onClick=${() => setActiveModal('student_form')}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+            >
+              <i className="fa-solid fa-plus"></i> New Student Admission
+            </button>
+            <button
+              onClick=${() => setView('students')}
+              className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+            >
+              <i className="fa-solid fa-file-excel text-emerald-600"></i> Bulk Excel Import
+            </button>
+            <button
+              onClick=${() => setView('results')}
+              className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+            >
+              <i className="fa-solid fa-square-poll-vertical text-indigo-600"></i> Enter / Upload Marks
+            </button>
+            <button
+              onClick=${() => setView('tc_studio')}
+              className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+            >
+              <i className="fa-solid fa-id-card text-amber-600"></i> Generate TC & ID Cards
+            </button>
+          </div>
+
+          <!-- Main Dashboard Split: Left Lists & Right Events/Announcements -->
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Recent Admissions -->
+            <div className="lg:col-span-2 space-y-6">
+              <${Card}>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <img src="public/student.png" className="w-5 h-5"/>
+                    <h3 className="text-sm font-bold text-slate-800">Enrolled Students</h3>
+                  </div>
+                  <button onClick=${() => setView('students')} className="text-xs font-bold text-indigo-600 hover:underline">
+                    View All (${studentCount})
+                  </button>
+                </div>
+                <div className="divide-y divide-slate-100 mt-2">
+                  ${studentCount ? S.students.slice(0, 5).map(st => {
+                    const cl = S.classes.find(c => c.id === st.cid) || { name: 'Class 10 A' };
+                    return html`
+                      <div key=${st.id} className="py-2.5 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-lamaSky text-slate-800 flex items-center justify-center font-bold text-xs">
+                            ${st.name.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900">${st.name}</div>
+                            <div className="text-[11px] text-slate-400">Roll: ${st.roll} • Adm: ${st.admNo}</div>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 font-semibold text-slate-700 text-[11px]">
+                          ${cl.name} ${cl.section || ''}
+                        </span>
+                      </div>
+                    `;
+                  }) : html`
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      No students enrolled yet. Click "Bulk Excel Import" or "New Student Admission" to add real records.
+                    </div>
+                  `}
+                </div>
+              <//>
+
+              <!-- Academic Overview Notice -->
+              <${Card} className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg flex-shrink-0">
+                    <i className="fa-solid fa-hands-holding-child"></i>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-emerald-950">${S.ngo.name}</h4>
+                    <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                      ${S.ngo.tagline}. All education, books, evaluation, certificates, and ID cards are provided 100% free of charge under Trust Regn: ${S.ngo.regNo}.
+                    </p>
+                  </div>
+                </div>
+              <//>
+            </div>
+
+            <!-- Right: Announcements & Events -->
+            <div className="space-y-6">
+              <!-- Announcements Card -->
+              <${Card}>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h4 className="font-bold text-xs text-slate-800 flex items-center gap-2">
+                    <img src="public/announcement.png" className="w-4 h-4"/>
+                    <span>Notice Board</span>
+                  </h4>
+                  <button onClick=${() => setView('announcements')} className="text-[11px] font-bold text-indigo-600 hover:underline">
+                    Manage
+                  </button>
+                </div>
+                <div className="space-y-3 mt-3">
+                  ${S.announcements.slice(0, 3).map(a => html`
+                    <div key=${a.id} className="p-3 rounded-xl bg-lamaSkyLight border border-slate-100 text-xs">
+                      <div className="flex justify-between items-center font-bold text-slate-800">
+                        <span>${a.title}</span>
+                        <span className="text-[10px] text-slate-400">${a.date}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 mt-1">${a.desc}</p>
+                    </div>
+                  `)}
+                </div>
+              <//>
+
+              <!-- Events Card -->
+              <${Card}>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h4 className="font-bold text-xs text-slate-800 flex items-center gap-2">
+                    <img src="public/calendar.png" className="w-4 h-4"/>
+                    <span>Upcoming Events</span>
+                  </h4>
+                  <button onClick=${() => setView('events')} className="text-[11px] font-bold text-indigo-600 hover:underline">
+                    View
+                  </button>
+                </div>
+                <div className="space-y-2 mt-3">
+                  ${S.events.slice(0, 3).map(ev => html`
+                    <div key=${ev.id} className="p-2.5 rounded-xl bg-lamaPurpleLight text-xs">
+                      <div className="font-bold text-slate-800">${ev.title}</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">${ev.date} • ${ev.time}</div>
+                    </div>
+                  `)}
+                </div>
+              <//>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 2. STUDENTS VIEW (FULL CRUD & EXCEL IMPORT/EXPORT)
+    // ==========================================
+    function StudentsView({ S, set, setActiveModal, setModalData, notify }) {
+      const [search, setSearch] = useState('');
+      const [filterClass, setFilterClass] = useState('');
+      const [csvText, setCsvText] = useState('');
+
+      const filtered = useMemo(() => {
+        return S.students.filter(st => {
+          const matchClass = filterClass ? String(st.cid) === String(filterClass) : true;
+          const q = search.toLowerCase();
+          const matchSearch = !q ||
+            st.name.toLowerCase().includes(q) ||
+            st.roll.toLowerCase().includes(q) ||
+            (st.admNo && st.admNo.toLowerCase().includes(q)) ||
+            (st.father && st.father.toLowerCase().includes(q)) ||
+            (st.phone && st.phone.includes(q));
+          return matchClass && matchSearch;
+        });
+      }, [S.students, search, filterClass]);
+
+      // Download Sample Excel Template
+      const downloadSampleTemplate = () => {
+        const headers = 'Roll,AdmissionNo,FullName,ClassName,Section,FatherName,MotherName,DOB,Gender,Phone,Category,Address\n';
+        const rows = [
+          '101,VD-2025-001,Aarav Kumar,Class 10,A,Ramesh Kumar,Sunita Devi,2010-05-14,Male,9876543210,EWS,New Delhi',
+          '102,VD-2025-002,Priya Kumari,Class 10,A,Suresh Kumar,Meena Devi,2010-08-02,Female,9876543211,EWS,New Delhi'
+        ].join('\n');
+        const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Vidyadaan_Student_Import_Template.csv';
+        a.click();
+        notify('Sample Excel/CSV Template downloaded!');
+      };
+
+      // Import Students CSV
+      const handleCsvImport = () => {
+        if (!csvText.trim()) return notify('Paste CSV content or select a file first.', 'error');
+        const lines = csvText.split(/\r?\n/).filter(l => l.trim());
+        let count = 0;
+        let nextNid = S.nid;
+        const newStudents = [...S.students];
+        const classes = [...S.classes];
+
+        lines.forEach((line, idx) => {
+          const parts = line.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+          if (idx === 0 && /roll|admission|name/i.test(parts[0])) return;
+          if (parts.length < 3) return;
+
+          const roll = parts[0];
+          const admNo = parts[1] || `VD-2025-${String(newStudents.length + 1).padStart(3, '0')}`;
+          const name = parts[2];
+          const className = parts[3] || 'Class 10';
+          const section = parts[4] || 'A';
+          const father = parts[5] || '';
+          const mother = parts[6] || '';
+          const dob = normDob(parts[7] || '2010-01-01');
+          const gender = parts[8] || 'Male';
+          const phone = parts[9] || '';
+          const category = parts[10] || 'EWS';
+          const address = parts[11] || '';
+
+          let targetClass = classes.find(c => c.name.toLowerCase() === className.toLowerCase() && (!section || c.section === section));
+          if (!targetClass) {
+            targetClass = { id: nextNid++, name: className, section: section || 'A' };
+            classes.push(targetClass);
+          }
+
+          newStudents.push({
+            id: nextNid++,
+            admNo,
+            roll,
+            name,
+            father,
+            mother,
+            dob,
+            gender,
+            cid: targetClass.id,
+            phone,
+            address,
+            bloodGroup: 'B+',
+            category
+          });
+          count++;
+        });
+
+        set({ students: newStudents, classes, nid: nextNid });
+        setCsvText('');
+        notify(`Successfully imported ${count} students!`);
+      };
+
+      // Export CSV
+      const handleCsvExport = () => {
+        if (!S.students.length) return notify('No student records to export.', 'error');
+        const headers = ['Roll', 'Admission No', 'Full Name', 'Class', 'Section', 'Father Name', 'Mother Name', 'DOB', 'Gender', 'Phone', 'Category', 'Address'];
+        const rows = S.students.map(st => {
+          const cl = S.classes.find(c => c.id === st.cid) || { name: 'Class 10', section: 'A' };
+          return [
+            st.roll, st.admNo, `"${st.name}"`, `"${cl.name}"`, `"${cl.section}"`,
+            `"${st.father || ''}"`, `"${st.mother || ''}"`, st.dob, st.gender, st.phone, st.category, `"${st.address || ''}"`
+          ].join(',');
+        });
+        const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Vidyadaan_Students_${S.ngo.session}.csv`;
+        a.click();
+      };
+
+      const handleDeleteStudent = (id) => {
+        if (confirm('Delete this student record permanently?')) {
+          set(p => ({
+            students: p.students.filter(s => s.id !== id),
+            marks: Object.fromEntries(Object.entries(p.marks).filter(([k]) => !k.startsWith(`${id}|`)))
+          }));
+          notify('Student record deleted.');
+        }
+      };
+
+      const handleClearAllStudents = () => {
+        if (confirm('CRITICAL: Delete ALL student records? This cannot be undone.')) {
+          set(p => ({ students: [], marks: {}, attendance: {} }));
+          notify('All student records deleted.');
+        }
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Student Directory (SIS)</h3>
+              <p className="text-xs text-slate-500">Student admissions, bulk Excel/CSV import, and official certificate printing.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick=${downloadSampleTemplate} className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-sm transition">
+                <i className="fa-solid fa-file-excel mr-1 text-emerald-600"></i> Sample Excel Template
+              </button>
+              <button onClick=${handleCsvExport} className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-sm transition">
+                <i className="fa-solid fa-file-export mr-1 text-indigo-600"></i> Export CSV
+              </button>
+              <button onClick=${() => { setActiveModal('student_form'); setModalData(null); }} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition">
+                <i className="fa-solid fa-plus mr-1"></i> Add Single Student
+              </button>
+            </div>
+          </div>
+
+          <!-- Excel / CSV Bulk Upload Container -->
+          <${Card} className="bg-indigo-50/20 border-indigo-100">
+            <div className="flex items-center justify-between pb-3 border-b border-indigo-100">
+              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                <img src="public/upload.png" className="w-4 h-4"/>
+                <span>Bulk Student Import via Excel / CSV</span>
+              </h4>
+              <span className="text-[11px] text-slate-500">Upload 100+ students instantly</span>
+            </div>
+            <div className="mt-3 space-y-3">
+              <textarea
+                rows="2"
+                value=${csvText}
+                onInput=${e => setCsvText(e.target.value)}
+                placeholder="Paste CSV rows: Roll, AdmissionNo, Full Name, Class, Section, Father Name, Mother Name, DOB (YYYY-MM-DD), Gender, Phone, Category, Address"
+                className="w-full p-3 font-mono text-xs rounded-xl border border-slate-200 outline-none focus:border-indigo-500 bg-white"
+              ></textarea>
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange=${e => {
+                    const f = e.target.files[0];
+                    if (!f) return;
+                    const r = new FileReader();
+                    r.onload = () => setCsvText(String(r.result).replace(/^\uFEFF/, ''));
+                    r.readAsText(f);
+                    e.target.value = '';
+                  }}
+                  className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-100 file:text-indigo-800 file:font-bold hover:file:bg-indigo-200 cursor-pointer"
+                />
+                <button
+                  onClick=${handleCsvImport}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow transition"
+                >
+                  <i className="fa-solid fa-cloud-arrow-up mr-1.5"></i> Import Students
+                </button>
+                ${S.students.length > 0 && html`
+                  <button
+                    onClick=${handleClearAllStudents}
+                    className="ml-auto px-3 py-1.5 rounded-xl border border-red-300 text-red-700 hover:bg-red-50 text-xs font-bold transition"
+                  >
+                    <i className="fa-solid fa-trash-can mr-1"></i> Clear All Students
+                  </button>
+                `}
+              </div>
+            </div>
+          <//>
+
+          <!-- Search & Filter Controls -->
+          <${Card} className="!p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2 relative">
+                <i className="fa-solid fa-search absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                <input
+                  type="text"
+                  placeholder="Search students by name, roll number, admission no, or phone..."
+                  value=${search}
+                  onInput=${e => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <select
+                  value=${filterClass}
+                  onChange=${e => setFilterClass(e.target.value)}
+                  className="w-full py-2 px-3 text-xs rounded-xl border border-slate-200 outline-none focus:border-indigo-500 bg-white font-medium"
+                >
+                  <option value="">All Classes (${S.classes.length})</option>
+                  ${S.classes.map(c => html`<option key=${c.id} value=${c.id}>${c.name} ${c.section}</option>`)}
+                </select>
+              </div>
+            </div>
+          <//>
+
+          <!-- Students Table (GitHub School ERP Style) -->
+          <${Card} className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold uppercase text-[10px]">
+                  <tr>
+                    <th className="py-3 px-4">Roll</th>
+                    <th className="py-3 px-4">Adm No</th>
+                    <th className="py-3 px-4">Student Name</th>
+                    <th className="py-3 px-4">Class</th>
+                    <th className="py-3 px-4">Father Name</th>
+                    <th className="py-3 px-4">DOB / Gender</th>
+                    <th className="py-3 px-4">Contact</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  ${filtered.length ? filtered.map(st => {
+                    const cl = S.classes.find(c => c.id === st.cid) || { name: 'Class 10 A' };
+                    return html`
+                      <tr key=${st.id} className="hover:bg-lamaPurpleLight/40 transition">
+                        <td className="py-3 px-4 font-bold text-slate-800">${st.roll}</td>
+                        <td className="py-3 px-4 font-mono text-[11px] text-slate-500">${st.admNo}</td>
+                        <td className="py-3 px-4 font-bold text-slate-900">
+                          <div className="flex items-center gap-2">
+                            <span className="w-7 h-7 rounded-full bg-lamaSky text-slate-800 flex items-center justify-center font-bold text-[11px]">
+                              ${st.name.charAt(0)}
+                            </span>
+                            <span>${st.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-lamaYellowLight text-slate-800 font-bold text-[11px]">
+                            ${cl.name} ${cl.section || ''}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">${st.father || '-'}</td>
+                        <td className="py-3 px-4 text-slate-500 text-[11px]">
+                          ${st.dob} • <strong>${st.gender}</strong>
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">${st.phone || '-'}</td>
+                        <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                          <button
+                            title="Print Official Marksheet"
+                            onClick=${() => { setActiveModal('report_card'); setModalData(st); }}
+                            className="w-7 h-7 rounded-full bg-lamaSky hover:bg-lamaSky/80 inline-flex items-center justify-center text-slate-800"
+                          >
+                            <img src="public/result.png" className="w-3.5 h-3.5"/>
+                          </button>
+                          <button
+                            title="Print Student ID Card"
+                            onClick=${() => { setActiveModal('id_card'); setModalData(st); }}
+                            className="w-7 h-7 rounded-full bg-lamaPurple hover:bg-lamaPurple/80 inline-flex items-center justify-center text-slate-800"
+                          >
+                            <img src="public/exam.png" className="w-3.5 h-3.5"/>
+                          </button>
+                          <button
+                            title="Generate Transfer Certificate"
+                            onClick=${() => { setActiveModal('tc'); setModalData(st); }}
+                            className="w-7 h-7 rounded-full bg-lamaYellow hover:bg-lamaYellow/80 inline-flex items-center justify-center text-slate-800"
+                          >
+                            <i className="fa-solid fa-graduation-cap text-xs"></i>
+                          </button>
+                          <button
+                            title="Edit Student"
+                            onClick=${() => { setActiveModal('student_form'); setModalData(st); }}
+                            className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 inline-flex items-center justify-center text-slate-600"
+                          >
+                            <img src="public/update.png" className="w-3.5 h-3.5"/>
+                          </button>
+                          <button
+                            title="Delete Student"
+                            onClick=${() => handleDeleteStudent(st.id)}
+                            className="w-7 h-7 rounded-full bg-red-100 hover:bg-red-200 inline-flex items-center justify-center text-red-600"
+                          >
+                            <img src="public/delete.png" className="w-3.5 h-3.5"/>
+                          </button>
+                        </td>
+                      </tr>
+                    `;
+                  }) : html`
+                    <tr>
+                      <td colSpan="8" className="py-12 text-center text-xs text-slate-400">
+                        <img src="public/noAvatar.png" className="w-12 h-12 mx-auto opacity-40 mb-2"/>
+                        No students found. Upload CSV or click "Add Single Student" above.
+                      </td>
+                    </tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+          <//>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 3. TEACHERS & VOLUNTEERS VIEW
+    // ==========================================
+    function TeachersView({ S, set, notify }) {
+      const [name, setName] = useState('');
+      const [desig, setDesig] = useState('Volunteer Teacher');
+      const [subject, setSubject] = useState('');
+      const [phone, setPhone] = useState('');
+
+      const addTeacher = (e) => {
+        e.preventDefault();
+        if (!name.trim()) return notify('Enter teacher name.', 'error');
+        const newT = { id: S.nid, name: name.trim(), desig, subject: subject.trim() || 'General', phone: phone.trim() };
+        set(p => ({ teachers: [...p.teachers, newT], nid: p.nid + 1 }));
+        setName('');
+        setSubject('');
+        setPhone('');
+        notify(`Added volunteer ${newT.name}!`);
+      };
+
+      const deleteTeacher = (id) => {
+        if (confirm('Delete teacher record?')) {
+          set(p => ({ teachers: p.teachers.filter(t => t.id !== id) }));
+          notify('Teacher removed.');
+        }
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Volunteers & Faculty Directory</h3>
+              <p className="text-xs text-slate-500">Manage NGO educators, volunteers, and subject allocations.</p>
+            </div>
+          </div>
+
+          <${Card}>
+            <h4 className="text-xs font-bold text-slate-800 mb-3">Add New Volunteer / Educator</h4>
+            <form onSubmit=${addTeacher} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <input
+                type="text"
+                required
+                placeholder="Full Name"
+                value=${name}
+                onInput=${e => setName(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Designation / Role"
+                value=${desig}
+                onInput=${e => setDesig(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Subject"
+                value=${subject}
+                onInput=${e => setSubject(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none"
+              />
+              <button type="submit" className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition">
+                <i className="fa-solid fa-plus mr-1"></i> Register Volunteer
+              </button>
+            </form>
+          <//>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            ${S.teachers.length ? S.teachers.map(t => html`
+              <${Card} key=${t.id} className="relative">
+                <button onClick=${() => deleteTeacher(t.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1">
+                  <i className="fa-solid fa-trash-can text-xs"></i>
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-lamaYellow text-slate-800 font-bold flex items-center justify-center text-sm">
+                    ${t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-sm text-slate-900">${t.name}</h5>
+                    <span className="text-[11px] text-emerald-700 font-semibold">${t.desig}</span>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
+                  <div>Subject: <strong>${t.subject}</strong></div>
+                  <div>Phone: <span className="font-mono">${t.phone || '-'}</span></div>
+                </div>
+              <//>
+            `) : html`
+              <div className="col-span-3 py-12 text-center text-xs text-slate-400">
+                No volunteers added yet. Register one above.
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 4. CLASSES VIEW
+    // ==========================================
+    function ClassesView({ S, set, notify }) {
+      const [name, setName] = useState('');
+      const [section, setSection] = useState('A');
+
+      const addClass = (e) => {
+        e.preventDefault();
+        if (!name.trim()) return notify('Enter class name.', 'error');
+        const newC = { id: S.nid, name: name.trim(), section: section.trim() };
+        set(p => ({ classes: [...p.classes, newC], nid: p.nid + 1 }));
+        setName('');
+        notify(`Added class ${newC.name} ${newC.section}!`);
+      };
+
+      const deleteClass = (id) => {
+        if (confirm('Delete this class? Associated students will be affected.')) {
+          set(p => ({ classes: p.classes.filter(c => c.id !== id) }));
+          notify('Class deleted.');
+        }
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Classes & Sections</h3>
+            <p className="text-xs text-slate-500">Configure academic class batches.</p>
+          </div>
+
+          <${Card}>
+            <h4 className="text-xs font-bold text-slate-800 mb-3">Add New Class</h4>
+            <form onSubmit=${addClass} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <input
+                type="text"
+                required
+                placeholder="Class (e.g. Class 10)"
+                value=${name}
+                onInput=${e => setName(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none col-span-2"
+              />
+              <input
+                type="text"
+                placeholder="Section (A)"
+                value=${section}
+                onInput=${e => setSection(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none"
+              />
+              <button type="submit" className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition">
+                <i className="fa-solid fa-plus mr-1"></i> Add Class
+              </button>
+            </form>
+          <//>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            ${S.classes.map(c => {
+              const count = S.students.filter(s => s.cid === c.id).length;
+              return html`
+                <${Card} key=${c.id} className="flex justify-between items-center">
+                  <div>
+                    <h5 className="font-extrabold text-base text-slate-900">${c.name} ${c.section}</h5>
+                    <span className="text-xs text-slate-400 font-semibold">${count} students enrolled</span>
+                  </div>
+                  <button onClick=${() => deleteClass(c.id)} className="text-red-500 hover:text-red-700 p-2">
+                    <i className="fa-solid fa-trash-can"></i>
+                  </button>
+                <//>
+              `;
+            })}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 5. SUBJECTS VIEW
+    // ==========================================
+    function SubjectsView({ S, set, notify }) {
+      const [name, setName] = useState('');
+      const [code, setCode] = useState('');
+      const [max, setMax] = useState(100);
+
+      const addSub = (e) => {
+        e.preventDefault();
+        if (!name.trim()) return notify('Enter subject name.', 'error');
+        const newSub = { id: S.nid, n: name.trim(), code: code.trim() || String(S.nid), max: Number(max) || 100, pass: 33 };
+        set(p => ({ subjects: [...p.subjects, newSub], nid: p.nid + 1 }));
+        setName('');
+        setCode('');
+        notify(`Added subject ${newSub.n}!`);
+      };
+
+      const deleteSub = (id) => {
+        if (confirm('Delete subject?')) {
+          set(p => ({ subjects: p.subjects.filter(s => s.id !== id) }));
+          notify('Subject deleted.');
+        }
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Curriculum Subjects</h3>
+            <p className="text-xs text-slate-500">Configure CBSE subjects and maximum evaluation scores.</p>
+          </div>
+
+          <${Card}>
+            <h4 className="text-xs font-bold text-slate-800 mb-3">Add Subject</h4>
+            <form onSubmit=${addSub} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <input
+                type="text"
+                required
+                placeholder="Subject Name"
+                value=${name}
+                onInput=${e => setName(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none col-span-2"
+              />
+              <input
+                type="text"
+                placeholder="Code (e.g. 041)"
+                value=${code}
+                onInput=${e => setCode(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none"
+              />
+              <button type="submit" className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition">
+                <i className="fa-solid fa-plus mr-1"></i> Add Subject
+              </button>
+            </form>
+          <//>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            ${S.subjects.map(s => html`
+              <${Card} key=${s.id} className="flex justify-between items-center">
+                <div>
+                  <h5 className="font-bold text-sm text-slate-900">${s.n}</h5>
+                  <span className="text-[11px] text-slate-400 font-mono">Code: ${s.code} • Max: ${s.max}</span>
+                </div>
+                <button onClick=${() => deleteSub(s.id)} className="text-red-500 hover:text-red-700 p-2">
+                  <i className="fa-solid fa-trash-can"></i>
+                </button>
+              <//>
+            `)}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 6. RESULTS & TEACHER MARKS ENTRY (GRID + BULK CSV)
+    // ==========================================
+    function ResultsView({ S, set, setActiveModal, setModalData, notify }) {
+      const classes = S.classes || [];
+      const [cid, setCid] = useState(classes[0]?.id || 1);
+      const activeClass = classes.find(c => c.id === Number(cid)) || classes[0];
+      const students = useMemo(() => S.students.filter(s => s.cid === activeClass?.id), [S.students, activeClass]);
+
+      const [selectedSubId, setSelectedSubId] = useState(S.subjects[0]?.id || 101);
+      const currentSub = S.subjects.find(s => s.id === Number(selectedSubId)) || S.subjects[0];
+
+      const [marksCsv, setMarksCsv] = useState('');
+
+      const handleMarkChange = (studentId, val) => {
+        const key = `${studentId}|${currentSub.id}`;
+        const num = val === '' ? null : Number(val);
+        set(p => ({
+          marks: {
+            ...p.marks,
+            [key]: { ...(p.marks[key] || {}), m: num }
+          }
+        }));
+      };
+
+      // Download Class Marks Template
+      const downloadMarksTemplate = () => {
+        if (!students.length) return notify('No students enrolled in this class yet.', 'error');
+        const headers = 'Roll,AdmissionNo,StudentName,MarksObtained\n';
+        const rows = students.map(st => {
+          const rec = S.marks[`${st.id}|${currentSub.id}`] || {};
+          return `${st.roll},${st.admNo},"${st.name}",${rec.m ?? ''}`;
+        }).join('\n');
+
+        const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Marks_${activeClass.name}_${currentSub.n}.csv`;
+        a.click();
+        notify(`Marks CSV template downloaded for ${currentSub.n}!`);
+      };
+
+      // Upload Marks from CSV
+      const uploadMarksCsv = () => {
+        if (!marksCsv.trim()) return notify('Paste marks CSV or select a file.', 'error');
+        const lines = marksCsv.split(/\r?\n/).filter(l => l.trim());
+        let updatedCount = 0;
+        const newMarks = { ...S.marks };
+
+        lines.forEach((line, idx) => {
+          const parts = line.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+          if (idx === 0 && /roll|marks|student/i.test(parts[0])) return;
+          if (parts.length < 2) return;
+
+          const roll = parts[0];
+          const marksVal = parts[3] !== undefined ? parts[3] : parts[1];
+          const num = marksVal === '' || isNaN(marksVal) ? null : Number(marksVal);
+
+          const student = students.find(s => s.roll === roll || s.admNo === roll);
+          if (student && num !== null) {
+            newMarks[`${student.id}|${currentSub.id}`] = { m: num };
+            updatedCount++;
+          }
+        });
+
+        set({ marks: newMarks });
+        setMarksCsv('');
+        notify(`Uploaded marks for ${updatedCount} students in ${currentSub.n}!`);
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Academic Evaluation & Marks Entry</h3>
+              <p className="text-xs text-slate-500">Record marks, bulk upload scores via CSV, and print CBSE marksheet.</p>
+            </div>
+            <button
+              onClick=${downloadMarksTemplate}
+              className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-sm transition"
+            >
+              <i className="fa-solid fa-file-excel mr-1 text-emerald-600"></i> Download Marks Excel Template
+            </button>
+          </div>
+
+          <!-- Class & Subject Selector -->
+          <${Card} className="!p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Select Class</label>
+                <select
+                  value=${cid}
+                  onChange=${e => setCid(Number(e.target.value))}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none bg-white font-medium"
+                >
+                  ${classes.map(c => html`<option key=${c.id} value=${c.id}>${c.name} ${c.section}</option>`)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Select Subject</label>
+                <select
+                  value=${selectedSubId}
+                  onChange=${e => setSelectedSubId(Number(e.target.value))}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none bg-white font-medium"
+                >
+                  ${S.subjects.map(s => html`<option key=${s.id} value=${s.id}>${s.n} (Max: ${s.max})</option>`)}
+                </select>
+              </div>
+            </div>
+          <//>
+
+          <!-- Bulk Upload Marks via CSV -->
+          <${Card} className="bg-emerald-50/20 border-emerald-100">
+            <div className="flex items-center justify-between pb-2 border-b border-emerald-100">
+              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <i className="fa-solid fa-upload text-emerald-600"></i> Upload Marks via Excel / CSV
+              </h4>
+              <span className="text-[11px] text-slate-500">Format: Roll, Marks (e.g. 101, 85)</span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <textarea
+                rows="1"
+                value=${marksCsv}
+                onInput=${e => setMarksCsv(e.target.value)}
+                placeholder="101, 85\n102, 92"
+                className="flex-1 min-w-[200px] p-2 font-mono text-xs rounded-xl border border-slate-200 outline-none bg-white"
+              ></textarea>
+              <input
+                type="file"
+                accept=".csv"
+                onChange=${e => {
+                  const f = e.target.files[0];
+                  if (!f) return;
+                  const r = new FileReader();
+                  r.onload = () => setMarksCsv(String(r.result).replace(/^\uFEFF/, ''));
+                  r.readAsText(f);
+                  e.target.value = '';
+                }}
+                className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-emerald-600 file:text-white file:font-bold hover:file:bg-emerald-700 cursor-pointer"
+              />
+              <button
+                onClick=${uploadMarksCsv}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow transition"
+              >
+                Upload Scores
+              </button>
+            </div>
+          <//>
+
+          <!-- Marks Matrix Table -->
+          <${Card} className="!p-0 overflow-hidden">
+            <div className="p-3.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center text-xs">
+              <span className="font-bold text-slate-800">
+                Evaluation Grid: <strong className="text-indigo-600">${currentSub?.n}</strong> (Max: ${currentSub?.max || 100})
+              </span>
+              <span className="text-slate-500 font-medium">Passing Marks: ${currentSub?.pass || 33}</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4">Roll</th>
+                    <th className="py-3 px-4">Student Name</th>
+                    <th className="py-3 px-4 text-center">Marks (${currentSub?.max})</th>
+                    <th className="py-3 px-4 text-center">CBSE Grade</th>
+                    <th className="py-3 px-4 text-center">Grade Point</th>
+                    <th className="py-3 px-4 text-right">Official Marksheet</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  ${students.length ? students.map(st => {
+                    const rec = S.marks[`${st.id}|${currentSub.id}`] || {};
+                    const m = rec.m;
+                    const gradeInfo = getCbseGrade(m, currentSub.max);
+
+                    return html`
+                      <tr key=${st.id} className="hover:bg-slate-50 transition">
+                        <td className="py-3 px-4 font-bold text-slate-800">${st.roll}</td>
+                        <td className="py-3 px-4 font-semibold text-slate-900">${st.name}</td>
+                        <td className="py-3 px-4 text-center">
+                          <input
+                            type="number"
+                            min="0"
+                            max=${currentSub.max}
+                            value=${m ?? ''}
+                            onInput=${e => handleMarkChange(st.id, e.target.value)}
+                            placeholder="Marks"
+                            className="w-24 p-1.5 text-xs font-bold text-center rounded-lg border border-slate-300 outline-none focus:border-indigo-500"
+                          />
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span className=${`font-black px-2 py-0.5 rounded text-xs ${gradeInfo.grade.startsWith('A') ? 'bg-emerald-100 text-emerald-800' : gradeInfo.grade.startsWith('B') ? 'bg-blue-100 text-blue-800' : gradeInfo.grade === 'D' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>
+                            ${gradeInfo.grade}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono font-bold text-slate-600">${gradeInfo.gp}</td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick=${() => { setActiveModal('report_card'); setModalData(st); }}
+                            className="px-3 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition"
+                          >
+                            <i className="fa-solid fa-print mr-1"></i> Marksheet
+                          </button>
+                        </td>
+                      </tr>
+                    `;
+                  }) : html`
+                    <tr><td colSpan="6" className="py-10 text-center text-xs text-slate-400">No students enrolled in this class.</td></tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+          <//>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 7. ATTENDANCE VIEW
+    // ==========================================
+    function AttendanceView({ S, set, notify }) {
+      const classes = S.classes || [];
+      const [cid, setCid] = useState(classes[0]?.id || 1);
+      const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+      const activeClass = classes.find(c => c.id === Number(cid)) || classes[0];
+      const students = useMemo(() => S.students.filter(s => s.cid === activeClass?.id), [S.students, activeClass]);
+
+      const mark = (studentId, status) => {
+        set(p => ({
+          attendance: { ...p.attendance, [`${date}|${studentId}`]: status }
+        }));
+      };
+
+      const markAllPresent = () => {
+        const updates = {};
+        students.forEach(s => { updates[`${date}|${s.id}`] = 'P'; });
+        set(p => ({ attendance: { ...p.attendance, ...updates } }));
+        notify(`All students in ${activeClass?.name} marked Present!`);
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Attendance Register</h3>
+              <p className="text-xs text-slate-500">Record daily classroom attendance.</p>
+            </div>
+            <button
+              onClick=${markAllPresent}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow transition"
+            >
+              <i className="fa-solid fa-check-double mr-1.5"></i> Mark All Present Today
+            </button>
+          </div>
+
+          <${Card} className="!p-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Select Class</label>
+                <select
+                  value=${cid}
+                  onChange=${e => setCid(Number(e.target.value))}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none bg-white font-medium"
+                >
+                  ${classes.map(c => html`<option key=${c.id} value=${c.id}>${c.name} ${c.section}</option>`)}
+                </select>
+              </div>
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Attendance Date</label>
+                <input
+                  type="date"
+                  value=${date}
+                  onChange=${e => setDate(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+                />
+              </div>
+            </div>
+          <//>
+
+          <${Card} className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-100 text-slate-600 font-bold uppercase text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4">Roll</th>
+                    <th className="py-3 px-4">Student Name</th>
+                    <th className="py-3 px-4 text-center">Status</th>
+                    <th className="py-3 px-4 text-right">Quick Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  ${students.length ? students.map(st => {
+                    const status = S.attendance[`${date}|${st.id}`] || 'P';
+                    return html`
+                      <tr key=${st.id} className="hover:bg-slate-50 transition">
+                        <td className="py-3 px-4 font-bold text-slate-800">${st.roll}</td>
+                        <td className="py-3 px-4 font-semibold text-slate-900">${st.name}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span className=${`inline-block w-7 h-7 rounded-full font-bold text-xs leading-7 ${status === 'P' ? 'bg-emerald-100 text-emerald-800' : status === 'A' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                            ${status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right space-x-1">
+                          <button onClick=${() => mark(st.id, 'P')} className=${`px-3 py-1 rounded-lg text-xs font-bold ${status === 'P' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-emerald-700'}`}>P</button>
+                          <button onClick=${() => mark(st.id, 'A')} className=${`px-3 py-1 rounded-lg text-xs font-bold ${status === 'A' ? 'bg-red-600 text-white' : 'bg-slate-100 text-red-700'}`}>A</button>
+                          <button onClick=${() => mark(st.id, 'L')} className=${`px-3 py-1 rounded-lg text-xs font-bold ${status === 'L' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-amber-700'}`}>L</button>
+                        </td>
+                      </tr>
+                    `;
+                  }) : html`
+                    <tr><td colSpan="4" className="py-8 text-center text-xs text-slate-400">No students in selected class.</td></tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+          <//>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 8. HOMEWORK / ASSIGNMENTS VIEW
+    // ==========================================
+    function AssignmentsView({ S, set, notify }) {
+      const [title, setTitle] = useState('');
+      const [sub, setSub] = useState(S.subjects[0]?.n || 'General');
+      const [dueDate, setDueDate] = useState('');
+      const [desc, setDesc] = useState('');
+
+      const addAssignment = (e) => {
+        e.preventDefault();
+        if (!title.trim()) return notify('Enter assignment title.', 'error');
+        const newA = { id: S.nid, title: title.trim(), sub, dueDate: dueDate || 'Tomorrow', desc: desc.trim() };
+        set(p => ({ assignments: [...p.assignments, newA], nid: p.nid + 1 }));
+        setTitle('');
+        setDesc('');
+        notify('Homework task assigned!');
+      };
+
+      const deleteAssignment = (id) => {
+        set(p => ({ assignments: p.assignments.filter(a => a.id !== id) }));
+        notify('Assignment deleted.');
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Homework & Assignments</h3>
+            <p className="text-xs text-slate-500">Assign learning tasks, homework, and reading exercises to students.</p>
+          </div>
+
+          <${Card}>
+            <h4 className="text-xs font-bold text-slate-800 mb-3">Post New Homework</h4>
+            <form onSubmit=${addAssignment} className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input
+                  type="text"
+                  required
+                  placeholder="Assignment Title (e.g. Chapter 4 Science Questions)"
+                  value=${title}
+                  onInput=${e => setTitle(e.target.value)}
+                  className="p-2.5 rounded-xl border border-slate-200 outline-none sm:col-span-2"
+                />
+                <input
+                  type="date"
+                  value=${dueDate}
+                  onChange=${e => setDueDate(e.target.value)}
+                  className="p-2.5 rounded-xl border border-slate-200 outline-none"
+                />
+              </div>
+              <textarea
+                rows="2"
+                placeholder="Detailed instructions for students..."
+                value=${desc}
+                onInput=${e => setDesc(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+              ></textarea>
+              <button type="submit" className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition">
+                <i className="fa-solid fa-plus mr-1"></i> Post Homework
+              </button>
+            </form>
+          <//>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${S.assignments.length ? S.assignments.map(a => html`
+              <${Card} key=${a.id} className="relative">
+                <button onClick=${() => deleteAssignment(a.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1">
+                  <i className="fa-solid fa-trash-can text-xs"></i>
+                </button>
+                <div className="font-bold text-sm text-slate-900">${a.title}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Due: ${a.dueDate}</div>
+                <p className="text-xs text-slate-600 mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">${a.desc}</p>
+              <//>
+            `) : html`
+              <div className="col-span-2 py-10 text-center text-xs text-slate-400">
+                No assignments posted yet.
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 9. EVENTS CALENDAR VIEW
+    // ==========================================
+    function EventsView({ S, set, notify }) {
+      const [title, setTitle] = useState('');
+      const [date, setDate] = useState('');
+      const [time, setTime] = useState('');
+      const [desc, setDesc] = useState('');
+
+      const addEvent = (e) => {
+        e.preventDefault();
+        if (!title.trim()) return notify('Enter event title.', 'error');
+        const newEv = { id: S.nid, title: title.trim(), date: date || '2026-10-30', time: time || '10:00 AM', desc: desc.trim() };
+        set(p => ({ events: [...p.events, newEv], nid: p.nid + 1 }));
+        setTitle('');
+        setDesc('');
+        notify('Event added to school calendar!');
+      };
+
+      const deleteEvent = (id) => {
+        set(p => ({ events: p.events.filter(e => e.id !== id) }));
+        notify('Event removed.');
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">School Calendar & Events</h3>
+            <p className="text-xs text-slate-500">Upcoming festivals, sports days, health checkups, and examinations.</p>
+          </div>
+
+          <${Card}>
+            <h4 className="text-xs font-bold text-slate-800 mb-3">Add Calendar Event</h4>
+            <form onSubmit=${addEvent} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <input
+                type="text"
+                required
+                placeholder="Event Title"
+                value=${title}
+                onInput=${e => setTitle(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none sm:col-span-2"
+              />
+              <input
+                type="date"
+                value=${date}
+                onChange=${e => setDate(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Time (e.g. 10:00 AM)"
+                value=${time}
+                onInput=${e => setTime(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Description"
+                value=${desc}
+                onInput=${e => setDesc(e.target.value)}
+                className="p-2.5 rounded-xl border border-slate-200 outline-none sm:col-span-3"
+              />
+              <button type="submit" className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition">
+                <i className="fa-solid fa-plus mr-1"></i> Add Event
+              </button>
+            </form>
+          <//>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            ${S.events.map(ev => html`
+              <${Card} key=${ev.id} className="relative bg-lamaPurpleLight/40">
+                <button onClick=${() => deleteEvent(ev.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1">
+                  <i className="fa-solid fa-trash-can text-xs"></i>
+                </button>
+                <div className="font-bold text-sm text-slate-900">${ev.title}</div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  <i className="fa-regular fa-clock mr-1"></i> ${ev.date} • ${ev.time}
+                </div>
+                <p className="text-xs text-slate-600 mt-2">${ev.desc}</p>
+              <//>
+            `)}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 10. ANNOUNCEMENTS NOTICE BOARD VIEW
+    // ==========================================
+    function AnnouncementsView({ S, set, notify }) {
+      const [title, setTitle] = useState('');
+      const [desc, setDesc] = useState('');
+
+      const addAnnouncement = (e) => {
+        e.preventDefault();
+        if (!title.trim()) return notify('Enter notice title.', 'error');
+        const newA = { id: S.nid, title: title.trim(), date: new Date().toISOString().slice(0, 10), desc: desc.trim() };
+        set(p => ({ announcements: [...p.announcements, newA], nid: p.nid + 1 }));
+        setTitle('');
+        setDesc('');
+        notify('Notice published on bulletin board!');
+      };
+
+      const deleteAnnouncement = (id) => {
+        set(p => ({ announcements: p.announcements.filter(a => a.id !== id) }));
+        notify('Notice removed.');
+      };
+
+      return html`
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Notice Board & Circulars</h3>
+            <p className="text-xs text-slate-500">Official circulars, holiday notices, and learning center announcements.</p>
+          </div>
+
+          <${Card}>
+            <h4 className="text-xs font-bold text-slate-800 mb-3">Publish Official Notice</h4>
+            <form onSubmit=${addAnnouncement} className="space-y-3 text-xs">
+              <input
+                type="text"
+                required
+                placeholder="Notice Subject"
+                value=${title}
+                onInput=${e => setTitle(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-bold"
+              />
+              <textarea
+                rows="2"
+                placeholder="Notice announcement content..."
+                value=${desc}
+                onInput=${e => setDesc(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+              ></textarea>
+              <button type="submit" className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition">
+                <i className="fa-solid fa-bullhorn mr-1"></i> Publish Notice
+              </button>
+            </form>
+          <//>
+
+          <div className="space-y-3">
+            ${S.announcements.map(a => html`
+              <${Card} key=${a.id} className="relative">
+                <button onClick=${() => deleteAnnouncement(a.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1">
+                  <i className="fa-solid fa-trash-can text-xs"></i>
+                </button>
+                <div className="flex justify-between items-center pr-8">
+                  <h4 className="font-bold text-sm text-slate-900">${a.title}</h4>
+                  <span className="text-[11px] text-slate-400 font-mono">${a.date}</span>
+                </div>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">${a.desc}</p>
+              <//>
+            `)}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 11. TC & ID CARDS STUDIO VIEW
+    // ==========================================
+    function TcStudioView({ S, setActiveModal, setModalData }) {
+      return html`
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Certificate & Identity Card Studio</h3>
+            <p className="text-xs text-slate-500">Official Transfer Certificates (TC) and Photo ID Badges with 1-Click Print/PDF.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- TC Generator Card -->
+            <${Card} className="flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-lamaYellow text-slate-800 flex items-center justify-center text-xl mb-4 shadow-sm">
+                  <i className="fa-solid fa-graduation-cap"></i>
+                </div>
+                <h4 className="text-base font-bold text-slate-800">Transfer Certificate (TC)</h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Generate official Vidyadaan NGO school leaving certificates with Registration Number, student conduct, and authorized signatures.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-100">
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Select Student</label>
+                <div className="flex gap-2">
+                  <select id="tcSelect" className="flex-1 p-2.5 text-xs rounded-xl border border-slate-200 outline-none bg-white font-medium">
+                    ${S.students.map(s => html`<option key=${s.id} value=${s.id}>${s.name} (Roll: ${s.roll})</option>`)}
+                  </select>
+                  <button
+                    onClick=${() => {
+                      const id = Number(document.getElementById('tcSelect').value);
+                      const st = S.students.find(s => s.id === id);
+                      if (st) { setActiveModal('tc'); setModalData(st); }
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow transition"
+                  >
+                    Generate TC
+                  </button>
+                </div>
+              </div>
+            <//>
+
+            <!-- Student ID Card Card -->
+            <${Card} className="flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-lamaSky text-slate-800 flex items-center justify-center text-xl mb-4 shadow-sm">
+                  <i className="fa-solid fa-id-card"></i>
+                </div>
+                <h4 className="text-base font-bold text-slate-800">Student Identity Card</h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Print official student ID cards with Vidyadaan NGO branding, emergency contact details, blood group, and barcode.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-100">
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Select Student</label>
+                <div className="flex gap-2">
+                  <select id="idSelect" className="flex-1 p-2.5 text-xs rounded-xl border border-slate-200 outline-none bg-white font-medium">
+                    ${S.students.map(s => html`<option key=${s.id} value=${s.id}>${s.name} (Roll: ${s.roll})</option>`)}
+                  </select>
+                  <button
+                    onClick=${() => {
+                      const id = Number(document.getElementById('idSelect').value);
+                      const st = S.students.find(s => s.id === id);
+                      if (st) { setActiveModal('id_card'); setModalData(st); }
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow transition"
+                  >
+                    Print ID Card
+                  </button>
+                </div>
+              </div>
+            <//>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 12. PUBLIC RESULT PORTAL VIEW
+    // ==========================================
+    function PublicPortalView({ S, setActiveModal, setModalData }) {
+      const [query, setQuery] = useState('');
+      const [foundStudent, setFoundStudent] = useState(null);
+      const [searched, setSearched] = useState(false);
+
+      const handleSearch = (e) => {
+        e.preventDefault();
+        setSearched(true);
+        const q = query.trim().toLowerCase();
+        if (!q) return setFoundStudent(null);
+
+        const st = S.students.find(s =>
+          (s.roll && s.roll.toLowerCase() === q) ||
+          (s.admNo && s.admNo.toLowerCase() === q) ||
+          (s.phone && s.phone === q)
+        );
+        setFoundStudent(st || null);
+      };
+
+      return html`
+        <div className="max-w-2xl mx-auto space-y-6 pt-6">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-3xl mx-auto shadow-lg shadow-emerald-600/30">
+              <i className="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h3 className="text-xl font-black text-slate-900">${S.ngo.name}</h3>
+            <p className="text-xs text-slate-500">${S.ngo.tagline}</p>
+            <div className="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
+              Online Result & Marksheet Portal
+            </div>
+          </div>
+
+          <${Card} className="shadow-lg">
+            <form onSubmit=${handleSearch} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Enter Student Roll Number or Admission Number
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 101 or VD-2025-001"
+                    value=${query}
+                    onInput=${e => setQuery(e.target.value)}
+                    className="w-full p-3 pl-10 text-sm font-bold rounded-xl border border-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  />
+                  <i className="fa-solid fa-search absolute left-3.5 top-3.5 text-slate-400"></i>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition"
+              >
+                Find Examination Marksheet
+              </button>
+            </form>
+          <//>
+
+          ${searched && html`
+            <div>
+              ${foundStudent ? html`
+                <${Card} className="border-emerald-200 bg-emerald-50/20">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                    <div>
+                      <h4 className="text-base font-bold text-slate-900">${foundStudent.name}</h4>
+                      <p className="text-xs text-slate-500">Roll: ${foundStudent.roll} • Adm No: ${foundStudent.admNo}</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 font-bold text-xs">
+                      Student Found
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                    <div><strong>Father:</strong> ${foundStudent.father || '-'}</div>
+                    <div><strong>DOB:</strong> ${foundStudent.dob}</div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-200 flex gap-2">
+                    <button
+                      onClick=${() => { setActiveModal('report_card'); setModalData(foundStudent); }}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow transition flex items-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-print"></i> View & Print Official Marksheet
+                    </button>
+                  </div>
+                <//>
+              ` : html`
+                <div className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center text-xs text-red-700 font-medium">
+                  <i className="fa-solid fa-circle-exclamation text-lg block mb-1"></i>
+                  No student matched "${query}". Please check your Roll or Admission Number.
+                </div>
+              `}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 13. SETTINGS & LOCAL BACKUP VIEW
+    // ==========================================
+    function SettingsView({ S, set, notify }) {
+      const [ngo, setNgo] = useState(S.ngo);
+
+      const saveSettings = (e) => {
+        e.preventDefault();
+        set({ ngo });
+        notify('NGO configuration saved!');
+      };
+
+      const exportBackup = () => {
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(S, null, 2));
+        const a = document.createElement('a');
+        a.href = dataStr;
+        a.download = `Vidyadaan_NGO_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        notify('Backup downloaded!');
+      };
+
+      const importBackup = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const parsed = JSON.parse(event.target.result);
+            if (parsed.ngo && parsed.classes) {
+              set(parsed);
+              notify('Database restored from JSON!');
+            }
+          } catch (err) {
+            notify('Invalid JSON file.', 'error');
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      const clearAllData = () => {
+        if (confirm('CRITICAL: Clear entire database to fresh blank state?')) {
+          set(getCleanState());
+          notify('Database cleared to 100% clean state.');
+        }
+      };
+
+      return html`
+        <div className="max-w-4xl space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">NGO Profile & Database Administration</h3>
+            <p className="text-xs text-slate-500">Configure NGO legal details, center name, and manage local backups.</p>
+          </div>
+
+          <${Card}>
+            <h4 className="text-xs font-bold text-slate-800 pb-2 border-b border-slate-100 mb-4">
+              NGO Institutional Profile
+            </h4>
+            <form onSubmit=${saveSettings} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="sm:col-span-2">
+                <label className="block font-bold text-slate-600 mb-1">NGO Full Legal Name</label>
+                <input
+                  type="text"
+                  required
+                  value=${ngo.name}
+                  onInput=${e => setNgo({ ...ngo, name: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Registration / Trust Number</label>
+                <input
+                  type="text"
+                  value=${ngo.regNo}
+                  onInput=${e => setNgo({ ...ngo, regNo: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Learning Center Name</label>
+                <input
+                  type="text"
+                  value=${ngo.centerName}
+                  onInput=${e => setNgo({ ...ngo, centerName: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-bold"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block font-bold text-slate-600 mb-1">Center Address</label>
+                <input
+                  type="text"
+                  value=${ngo.address}
+                  onInput=${e => setNgo({ ...ngo, address: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Academic Session</label>
+                <input
+                  type="text"
+                  value=${ngo.session}
+                  onInput=${e => setNgo({ ...ngo, session: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Center Head / Director Signature</label>
+                <input
+                  type="text"
+                  value=${ngo.centerHead}
+                  onInput=${e => setNgo({ ...ngo, centerHead: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+                />
+              </div>
+
+              <div className="sm:col-span-2 pt-2">
+                <button type="submit" className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow transition">
+                  <i className="fa-solid fa-floppy-disk mr-1.5"></i> Save NGO Profile
+                </button>
+              </div>
+            </form>
+          <//>
+
+          <${Card}>
+            <h4 className="text-xs font-bold text-slate-800 pb-2 border-b border-slate-100 mb-4">
+              Database Maintenance & Backups
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-2">
+                <h5 className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <i className="fa-solid fa-download text-indigo-600"></i> Download JSON Backup
+                </h5>
+                <p className="text-[11px] text-slate-500">Export all students, classes, subjects, and marks into a backup file.</p>
+                <button onClick=${exportBackup} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition">
+                  Download .JSON
+                </button>
+              </div>
+
+              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-2">
+                <h5 className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <i className="fa-solid fa-upload text-emerald-600"></i> Restore JSON Backup
+                </h5>
+                <p className="text-[11px] text-slate-500">Restore previous data from a saved JSON backup file.</p>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange=${importBackup}
+                  className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-emerald-600 file:text-white file:font-bold hover:file:bg-emerald-700 cursor-pointer"
+                />
+              </div>
+
+              <div className="p-4 rounded-2xl border border-red-200 bg-red-50/50 space-y-2 sm:col-span-2">
+                <h5 className="font-bold text-red-900 flex items-center gap-1.5">
+                  <i className="fa-solid fa-trash-can text-red-600"></i> Clear Database (Blank Slate)
+                </h5>
+                <p className="text-[11px] text-red-700">Wipe all records to zero for fresh actual school deployment.</p>
+                <button onClick=${clearAllData} className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition">
+                  Clear Database
+                </button>
+              </div>
+            </div>
+          <//>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // MODALS: STUDENT FORM, REPORT CARD, TC, ID CARD
+    // ==========================================
+
+    // Student Admission / Edit Form
+    function StudentFormModal({ S, set, student, close, notify }) {
+      const isEdit = !!student;
+      const [formData, setFormData] = useState(student || {
+        admNo: `VD-2025-${String(S.students.length + 1).padStart(3, '0')}`,
+        roll: String(100 + S.students.length + 1),
+        name: '',
+        father: '',
+        mother: '',
+        dob: '2010-01-01',
+        gender: 'Male',
+        cid: S.classes[0]?.id || 1,
+        phone: '',
+        address: '',
+        bloodGroup: 'B+',
+        category: 'EWS'
+      });
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!formData.name.trim()) return notify('Enter student name.', 'error');
+
+        if (isEdit) {
+          set(p => ({
+            students: p.students.map(s => s.id === student.id ? { ...formData, id: student.id } : s)
+          }));
+          notify(`Updated student profile for ${formData.name}`);
+        } else {
+          set(p => ({
+            students: [...p.students, { ...formData, id: p.nid }],
+            nid: p.nid + 1
+          }));
+          notify(`Enrolled student ${formData.name}!`);
+        }
+        close();
+      };
+
+      return html`
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
+                <img src="public/student.png" className="w-5 h-5"/>
+                <span>${isEdit ? 'Edit Student Details' : 'New Vidyadaan Free Admission'}</span>
+              </h3>
+              <button onClick=${close} className="text-slate-400 hover:text-slate-700">
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
+
+            <form onSubmit=${handleSubmit} className="mt-4 grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Roll Number</label>
+                <input
+                  type="text"
+                  required
+                  value=${formData.roll}
+                  onInput=${e => setFormData({ ...formData, roll: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 font-bold outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Admission Number</label>
+                <input
+                  type="text"
+                  required
+                  value=${formData.admNo}
+                  onInput=${e => setFormData({ ...formData, admNo: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 font-mono outline-none"
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block font-bold text-slate-600 mb-1">Student Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Aarav Kumar"
+                  value=${formData.name}
+                  onInput=${e => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 font-bold outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Class Allotted</label>
+                <select
+                  value=${formData.cid}
+                  onChange=${e => setFormData({ ...formData, cid: Number(e.target.value) })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                >
+                  ${S.classes.map(c => html`<option key=${c.id} value=${c.id}>${c.name} ${c.section}</option>`)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Gender</label>
+                <select
+                  value=${formData.gender}
+                  onChange=${e => setFormData({ ...formData, gender: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Father's Name</label>
+                <input
+                  type="text"
+                  value=${formData.father}
+                  onInput=${e => setFormData({ ...formData, father: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Mother's Name</label>
+                <input
+                  type="text"
+                  value=${formData.mother}
+                  onInput=${e => setFormData({ ...formData, mother: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Date of Birth</label>
+                <input
+                  type="date"
+                  required
+                  value=${formData.dob}
+                  onInput=${e => setFormData({ ...formData, dob: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Contact Phone</label>
+                <input
+                  type="text"
+                  placeholder="Mobile / WhatsApp"
+                  value=${formData.phone}
+                  onInput=${e => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 font-mono outline-none"
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block font-bold text-slate-600 mb-1">Residential Address</label>
+                <input
+                  type="text"
+                  value=${formData.address}
+                  onInput=${e => setFormData({ ...formData, address: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 outline-none"
+                />
+              </div>
+
+              <div className="col-span-2 pt-3 border-t border-slate-200 flex justify-end gap-2">
+                <button type="button" onClick=${close} className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow">
+                  ${isEdit ? 'Save Changes' : 'Register Student'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    // Official Marksheet / Report Card Template (CBSE Aligned)
+    function ReportCardModal({ S, student, close }) {
+      if (!student) return null;
+      const cl = S.classes.find(c => c.id === student.cid) || { name: 'Class 10', section: 'A' };
+      const co = S.coScholastic[student.id] || { workEdu: 'A', artEdu: 'A', healthEdu: 'A', discipline: 'A' };
+
+      let totalMax = 0;
+      let totalObtained = 0;
+      let passed = true;
+
+      const marksRows = S.subjects.map(sub => {
+        const rec = S.marks[`${student.id}|${sub.id}`] || {};
+        const m = rec.m ?? 0;
+        totalMax += sub.max;
+        totalObtained += m;
+        const gradeInfo = getCbseGrade(m, sub.max);
+        if (m < sub.pass) passed = false;
+        return { sub, m, gradeInfo };
+      });
+
+      const percentage = totalMax ? ((totalObtained / totalMax) * 100).toFixed(1) : '0.0';
+      const overallGrade = getCbseGrade(Number(percentage), 100);
+
+      return html`
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl relative max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 no-print">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <i className="fa-solid fa-file-invoice text-emerald-600"></i> Official Vidyadaan NGO Marksheet Template
+              </span>
+              <div className="flex items-center gap-2">
+                <button onClick=${() => window.print()} className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow hover:bg-emerald-700 flex items-center gap-1.5">
+                  <i className="fa-solid fa-print"></i> Print / Save as PDF
+                </button>
+                <button onClick=${close} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700">
+                  <i className="fa-solid fa-xmark text-lg"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Printable Official Document -->
+            <div className="print-area mt-3 border-4 border-double border-slate-800 p-5 bg-white text-slate-900">
+              <div className="text-center border-b-2 border-slate-800 pb-3">
+                <div className="text-[10px] tracking-widest font-bold uppercase text-slate-500">
+                  VIDYADAAN EDUCATIONAL & CHARITABLE TRUST (REGD.)
+                </div>
+                <h2 className="text-2xl font-black tracking-tight text-slate-950 mt-0.5">
+                  ${S.ngo.name}
+                </h2>
+                <p className="text-[11px] text-slate-600 max-w-xl mx-auto leading-tight mt-0.5">
+                  ${S.ngo.centerName} • ${S.ngo.address}
+                </p>
+                <div className="mt-1 flex justify-center gap-4 text-[10px] font-bold text-slate-700">
+                  <span>Regd No: ${S.ngo.regNo}</span>
+                  <span>Curriculum: ${S.ngo.curriculum}</span>
+                </div>
+                <div className="mt-2 inline-block px-4 py-0.5 border border-slate-800 font-extrabold text-xs uppercase bg-slate-50">
+                  ANNUAL ACADEMIC EVALUATION REPORT • SESSION ${S.ngo.session}
+                </div>
+              </div>
+
+              <div className="my-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs border border-slate-300 p-3 bg-slate-50/50">
+                <div><span className="text-slate-500">Student's Name:</span> <strong className="text-slate-900 uppercase">${student.name}</strong></div>
+                <div><span className="text-slate-500">Class & Section:</span> <strong>${cl.name} ${cl.section}</strong></div>
+                <div><span className="text-slate-500">Father's Name:</span> <strong>${student.father || '-'}</strong></div>
+                <div><span className="text-slate-500">Roll Number:</span> <strong className="font-mono">${student.roll}</strong></div>
+                <div><span className="text-slate-500">Mother's Name:</span> <strong>${student.mother || '-'}</strong></div>
+                <div><span className="text-slate-500">Admission No:</span> <strong className="font-mono">${student.admNo}</strong></div>
+                <div><span className="text-slate-500">Date of Birth:</span> <strong>${student.dob}</strong></div>
+                <div><span className="text-slate-500">Curriculum Term:</span> <strong>Annual Evaluation 2026</strong></div>
+              </div>
+
+              <!-- Scholastic Area -->
+              <div className="mt-3">
+                <div className="text-[11px] font-black uppercase tracking-wide bg-slate-800 text-white px-2.5 py-1">
+                  Scholastic Evaluation (CBSE 9-Point Grading Scale)
+                </div>
+                <table className="w-full border-collapse border border-slate-800 text-xs mt-1">
+                  <thead className="bg-slate-100 text-slate-900 font-bold border-b border-slate-800 text-[11px]">
+                    <tr>
+                      <th className="border border-slate-400 p-1.5 text-left">Subject Code & Name</th>
+                      <th className="border border-slate-400 p-1.5 text-center">Max Marks</th>
+                      <th className="border border-slate-400 p-1.5 text-center">Marks Obtained</th>
+                      <th className="border border-slate-400 p-1.5 text-center">Grade</th>
+                      <th className="border border-slate-400 p-1.5 text-center">Grade Point</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${marksRows.map(row => html`
+                      <tr key=${row.sub.id} className="text-center">
+                        <td className="border border-slate-400 p-1.5 text-left font-medium">
+                          ${row.sub.code ? `[${row.sub.code}] ` : ''}${row.sub.n}
+                        </td>
+                        <td className="border border-slate-400 p-1.5">${row.sub.max}</td>
+                        <td className="border border-slate-400 p-1.5 font-bold">${row.m}</td>
+                        <td className="border border-slate-400 p-1.5 font-black">${row.gradeInfo.grade}</td>
+                        <td className="border border-slate-400 p-1.5 font-mono">${row.gradeInfo.gp}</td>
+                      </tr>
+                    `)}
+                    <tr className="bg-slate-100 font-bold text-center border-t-2 border-slate-800">
+                      <td className="border border-slate-400 p-1.5 text-left font-black">GRAND TOTAL</td>
+                      <td className="border border-slate-400 p-1.5">${totalMax}</td>
+                      <td className="border border-slate-400 p-1.5 font-black">${totalObtained}</td>
+                      <td className="border border-slate-400 p-1.5 font-black">${overallGrade.grade}</td>
+                      <td className="border border-slate-400 p-1.5 font-mono">${overallGrade.gp}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Summary Indicators -->
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="border border-slate-400 p-1.5 bg-slate-50">
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Percentage</div>
+                  <div className="text-sm font-black text-slate-900">${percentage}%</div>
+                </div>
+                <div className="border border-slate-400 p-1.5 bg-slate-50">
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Final Result</div>
+                  <div className=${`text-sm font-black ${passed ? 'text-emerald-700' : 'text-red-700'}`}>
+                    ${passed ? 'PROMOTED / PASSED' : 'NEEDS IMPROVEMENT'}
+                  </div>
+                </div>
+                <div className="border border-slate-400 p-1.5 bg-slate-50">
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Overall Grade</div>
+                  <div className="text-sm font-black text-indigo-700">${overallGrade.grade} (${overallGrade.desc})</div>
+                </div>
+              </div>
+
+              <!-- Co-Scholastic Traits -->
+              <div className="mt-3">
+                <div className="text-[11px] font-black uppercase tracking-wide bg-slate-800 text-white px-2.5 py-1">
+                  Co-Scholastic & Life Skills (Grading: A, B, C)
+                </div>
+                <table className="w-full border-collapse border border-slate-800 text-xs mt-1">
+                  <thead className="bg-slate-100 text-slate-900 font-bold border-b border-slate-800 text-[11px]">
+                    <tr>
+                      <th className="border border-slate-400 p-1 text-left">Activity / Trait</th>
+                      <th className="border border-slate-400 p-1 text-center w-24">Grade</th>
+                      <th className="border border-slate-400 p-1 text-left">Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-400 p-1 font-medium">Work Education & Creative Skills</td>
+                      <td className="border border-slate-400 p-1 text-center font-bold">${co.workEdu}</td>
+                      <td className="border border-slate-400 p-1 text-[11px] text-slate-600">Active participation in creative learning tasks</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-400 p-1 font-medium">Art & Cultural Expression</td>
+                      <td className="border border-slate-400 p-1 text-center font-bold">${co.artEdu}</td>
+                      <td className="border border-slate-400 p-1 text-[11px] text-slate-600">Enthusiastic engagement in arts and music</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-400 p-1 font-medium">Health, Sports & Hygiene</td>
+                      <td className="border border-slate-400 p-1 text-center font-bold">${co.healthEdu}</td>
+                      <td className="border border-slate-400 p-1 text-[11px] text-slate-600">Maintains good health and physical stamina</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-400 p-1 font-medium">Discipline & Moral Values</td>
+                      <td className="border border-slate-400 p-1 text-center font-bold">${co.discipline}</td>
+                      <td className="border border-slate-400 p-1 text-[11px] text-slate-600">Exemplary respect, attendance and team spirit</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Signatures -->
+              <div className="mt-8 pt-4 flex justify-between text-xs text-center font-bold text-slate-800">
+                <div className="w-40 border-t border-slate-800 pt-1">Volunteer Class Teacher</div>
+                <div className="w-40 border-t border-slate-800 pt-1">Evaluation Coordinator</div>
+                <div className="w-40 border-t border-slate-800 pt-1">${S.ngo.centerHead}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Official Transfer Certificate (TC) Template
+    function TransferCertificateModal({ S, student, close }) {
+      if (!student) return null;
+      const cl = S.classes.find(c => c.id === student.cid) || { name: 'Class 10', section: 'A' };
+
+      return html`
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 no-print">
+              <span className="text-xs font-bold text-slate-700">Official Vidyadaan NGO Transfer Certificate</span>
+              <div className="flex items-center gap-2">
+                <button onClick=${() => window.print()} className="px-3.5 py-1.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700">
+                  <i className="fa-solid fa-print mr-1"></i> Print TC
+                </button>
+                <button onClick=${close} className="text-slate-400 hover:text-slate-700">
+                  <i className="fa-solid fa-xmark text-lg"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className="print-area mt-4 border-4 border-double border-slate-900 p-6 bg-white text-slate-900 text-xs">
+              <div className="text-center border-b-2 border-slate-900 pb-3">
+                <div className="text-[10px] font-bold uppercase text-slate-500">VIDYADAAN EDUCATIONAL INITIATIVE (REGD. NGO)</div>
+                <h3 className="text-xl font-black uppercase text-slate-950">${S.ngo.name}</h3>
+                <p className="text-[11px] text-slate-600">${S.ngo.centerName} • ${S.ngo.address}</p>
+                <div className="mt-1 font-bold text-[10px]">Registration No: ${S.ngo.regNo}</div>
+                <div className="mt-2 inline-block px-4 py-0.5 border border-slate-900 font-extrabold text-xs uppercase bg-slate-100">
+                  STUDENT TRANSFER / LEAVING CERTIFICATE
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-between text-xs font-bold">
+                <span>Book No: <strong>01</strong></span>
+                <span>SI. No: <strong>TC-VD-${student.id + 100}</strong></span>
+                <span>Admission No: <strong className="font-mono">${student.admNo}</strong></span>
+              </div>
+
+              <div className="mt-4 space-y-2 text-xs leading-relaxed">
+                <div>1. Name of Pupil: <strong className="uppercase underline">${student.name}</strong></div>
+                <div>2. Father's / Guardian's Name: <strong className="uppercase underline">${student.father || 'N/A'}</strong></div>
+                <div>3. Mother's Name: <strong className="uppercase underline">${student.mother || 'N/A'}</strong></div>
+                <div>4. Nationality: <strong>INDIAN</strong></div>
+                <div>5. Category: <strong>${student.category || 'EWS'}</strong></div>
+                <div>6. Date of Admission in Learning Center: <strong>2024-04-01</strong> in Class: <strong>${cl.name}</strong></div>
+                <div>7. Date of Birth according to Admission Register: <strong>${student.dob}</strong></div>
+                <div>8. Class in which pupil last studied: <strong>${cl.name} (${cl.section})</strong></div>
+                <div>9. Academic Evaluation Result: <strong>QUALIFIED / PASSED</strong></div>
+                <div>10. General Conduct of pupil: <strong>GOOD & DISCIPLINED</strong></div>
+                <div>11. Date of issue of Certificate: <strong>${new Date().toISOString().slice(0, 10)}</strong></div>
+                <div>12. Reason for leaving: <strong>Higher School Admission / Relocation</strong></div>
+              </div>
+
+              <div className="mt-12 pt-4 flex justify-between text-xs text-center font-bold">
+                <div className="w-36 border-t border-slate-800 pt-1">Prepared by</div>
+                <div className="w-36 border-t border-slate-800 pt-1">Verified by</div>
+                <div className="w-40 border-t border-slate-800 pt-1">${S.ngo.centerHead}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Student ID Badge Modal
+    function IdCardModal({ S, student, close }) {
+      if (!student) return null;
+      const cl = S.classes.find(c => c.id === student.cid) || { name: 'Class 10', section: 'A' };
+
+      return html`
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 no-print">
+              <span className="text-xs font-bold text-slate-700">Student Identity Card</span>
+              <div className="flex items-center gap-2">
+                <button onClick=${() => window.print()} className="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700">
+                  <i className="fa-solid fa-print mr-1"></i> Print
+                </button>
+                <button onClick=${close} className="text-slate-400 hover:text-slate-700">
+                  <i className="fa-solid fa-xmark text-lg"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Printable ID Badge -->
+            <div className="print-area mt-4 mx-auto w-64 rounded-2xl border-2 border-emerald-600 shadow-lg overflow-hidden bg-white text-slate-800">
+              <div className="bg-emerald-700 text-white text-center py-2 px-2">
+                <h4 className="font-black text-xs uppercase tracking-tight">${S.ngo.name}</h4>
+                <p className="text-[8px] text-emerald-200 uppercase font-semibold">100% Free Education Initiative</p>
+              </div>
+
+              <div className="p-3 text-center">
+                <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-emerald-500 mx-auto flex items-center justify-center text-slate-400 text-3xl font-bold shadow-inner">
+                  <i className="fa-solid fa-user"></i>
+                </div>
+                <h5 className="font-extrabold text-sm text-slate-900 mt-2 uppercase">${student.name}</h5>
+                <span className="inline-block px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-[10px] mt-0.5">
+                  ${cl.name} ${cl.section}
+                </span>
+
+                <div className="mt-3 text-left text-[10px] space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                  <div><span className="text-slate-400">Roll No:</span> <strong>${student.roll}</strong></div>
+                  <div><span className="text-slate-400">Adm No:</span> <strong className="font-mono">${student.admNo}</strong></div>
+                  <div><span className="text-slate-400">Father:</span> <strong>${student.father || '-'}</strong></div>
+                  <div><span className="text-slate-400">DOB:</span> <strong>${student.dob}</strong></div>
+                  <div><span className="text-slate-400">Category:</span> <strong>${student.category || 'EWS'}</strong></div>
+                  <div><span className="text-slate-400">Emergency:</span> <strong className="font-mono">${student.phone || '-'}</strong></div>
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between text-[8px] text-slate-500">
+                  <span>Session ${S.ngo.session}</span>
+                  <span className="font-bold border-t border-slate-400 pt-0.5">Director Sign</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
+  </script>
 </body>
 </html>

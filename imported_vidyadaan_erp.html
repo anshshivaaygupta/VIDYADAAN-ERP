@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VIDYADAAN - School Result System</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+@media print{body{background:#fff}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState,useEffect}=React;
+const html=htm.bind(React.createElement);
+const KEY='vidyadaan_erp_v1';
+const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+const lbl=c=>c.section?`${c.name} ${c.section}`:c.name;
+const ALIAS={maths:'mathematics',math:'mathematics',sci:'science',eng:'english',sst:'socialscience',socialstudies:'socialscience',comp:'computer',hin:'hindi',phy:'physics',chem:'chemistry',bio:'biology'};
+const skey=n=>{const k=String(n).toLowerCase().replace(/[^a-z0-9]/g,'');return ALIAS[k]||k};
+const clash=(subs,n,skip)=>{const k=skey(n);return subs.find(s=>s.id!==skip&&(o=>o===k||(Math.min(o.length,k.length)>=3&&(o.startsWith(k)||k.startsWith(o))))(skey(s.n)))};
+const normDob=s=>{s=String(s).trim();let m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;m=s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);return m?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:s};
+const grade=(m,s)=>{if(m<s.pass)return'F';const p=m/s.max*100;return p>=90?'A+':p>=75?'A':p>=60?'B':'C'};
+
+// Clean empty database as requested
+const seed=()=>({
+  school:{name:'VIDYADAAN ERP',addr:'',session:'2025-26'},
+  classes:[],
+  subjects:[],
+  students:[],
+  exam:{name:'Annual Examination 2026',published:false,locked:false},
+  marks:{},
+  nid:1
+});
+
+const demoData=()=>({
+  school:{name:'VIDYADAAN ERP',addr:'Main Campus, Education City',session:'2025-26'},
+  classes:[{id:1,name:'Class 10',section:'A'},{id:2,name:'Class 9',section:'B'}],
+  subjects:[{id:3,n:'Mathematics',max:100,pass:33},{id:4,n:'Science',max:100,pass:33},{id:5,n:'English',max:100,pass:33}],
+  students:[{id:6,roll:'101',name:'Aarav Kumar',father:'Ramesh Kumar',dob:'2010-05-14',cid:1},{id:7,roll:'102',name:'Priya Singh',father:'Suresh Singh',dob:'2010-08-02',cid:1},{id:8,roll:'103',name:'Rohit Yadav',father:'Mahesh Yadav',dob:'2010-01-27',cid:1}],
+  exam:{name:'Annual Examination 2026',published:true,locked:false},
+  marks:{'6|3':{m:92},'6|4':{m:85},'6|5':{m:78},'7|3':{m:64},'7|4':{m:30},'7|5':{m:71},'8|3':{ab:1},'8|4':{m:55},'8|5':{m:49}},
+  nid:9
+});
+
+const load=()=>{
+  try{
+    localStorage.removeItem('srs_v3');
+    const saved = localStorage.getItem(KEY);
+    return saved ? JSON.parse(saved) : seed();
+  }catch(e){
+    return seed();
+  }
+};
+
+const inp='w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100 disabled:text-slate-500';
+const btn='rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700';
+const btnS='rounded-md px-2 py-1 text-xs font-medium';
+const card='rounded-xl border border-slate-200 bg-white p-5 shadow-sm';
+const th='bg-slate-50 px-3 py-2 text-left text-xs font-semibold text-slate-600';
+const td='border-t border-slate-100 px-3 py-2';
+const lab='mb-1 block text-xs font-medium text-slate-600';
+const tones={g:'bg-emerald-100 text-emerald-700',r:'bg-red-100 text-red-700',a:'bg-amber-100 text-amber-700',s:'bg-slate-100 text-slate-600'};
+const Badge=({t,c})=>html`<span className=${'inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold '+tones[c]}>${t}</span>`;
+const St=({s})=>html`<${Badge} t=${s} c=${s==='PASS'?'g':s==='ABSENT'?'a':s==='PENDING'?'s':'r'}/>`;
+const Note=({m})=>m?html`<div role="status" className=${'rounded-lg border px-3 py-2 text-sm '+(m.c==='r'?'border-red-200 bg-red-50 text-red-700':m.c==='g'?'border-emerald-200 bg-emerald-50 text-emerald-700':'border-indigo-200 bg-indigo-50 text-indigo-800')}>${m.t}</div>`:null;
+const Table=({head,children})=>html`<div className="mt-4 max-h-80 overflow-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="sticky top-0"><tr>${head.map(h=>html`<th key=${h} className=${th}>${h}</th>`)}</tr></thead><tbody>${children}</tbody></table></div>`;
+const Empty=({n,t})=>html`<tr><td colSpan=${n} className=${td+' text-slate-500'}>${t}</td></tr>`;
+const Actions=({ed,onEdit,onSave,onCancel,onDel})=>html`<td className=${td+' whitespace-nowrap'}>${ed?html`<button onClick=${onSave} className=${btnS+' text-indigo-700 hover:bg-indigo-50'}>Save</button><button onClick=${onCancel} className=${btnS+' text-slate-600 hover:bg-slate-100'}>Cancel</button>`:html`<button onClick=${onEdit} className=${btnS+' text-indigo-700 hover:bg-indigo-50'}>Edit</button>`}<button onClick=${onDel} className=${btnS+' text-red-600 hover:bg-red-50'}>Delete</button></td>`;
+
+function ClassRow({c,count,onSave,onDel}){
+ const [ed,setEd]=useState(false),[n,setN]=useState(c.name),[s,setS]=useState(c.section);
+ return html`<tr><td className=${td+' font-medium'}>${ed?html`<input className=${inp} value=${n} onInput=${e=>setN(e.target.value)} aria-label="Class name"/>`:c.name}</td>
+ <td className=${td}>${ed?html`<input className=${inp+' w-20'} value=${s} onInput=${e=>setS(e.target.value)} aria-label="Section"/>`:(c.section||'-')}</td><td className=${td}>${count}</td>
+ <${Actions} ed=${ed} onEdit=${()=>setEd(true)} onCancel=${()=>{setEd(false);setN(c.name);setS(c.section)}} onSave=${()=>{if(onSave(c.id,n.trim(),s.trim()))setEd(false)}} onDel=${()=>onDel(c.id)}/></tr>`}
+
+function SubRow({s,onSave,onDel}){
+ const [ed,setEd]=useState(false),[n,setN]=useState(s.n),[m,setM]=useState(s.max),[p,setP]=useState(s.pass);
+ return html`<tr><td className=${td+' font-medium'}>${ed?html`<input className=${inp} value=${n} onInput=${e=>setN(e.target.value)} aria-label="Subject name"/>`:s.n}</td>
+ <td className=${td}>${ed?html`<input type="number" className=${inp+' w-24'} value=${m} onInput=${e=>setM(e.target.value)} aria-label="Max marks"/>`:s.max}</td>
+ <td className=${td}>${ed?html`<input type="number" className=${inp+' w-24'} value=${p} onInput=${e=>setP(e.target.value)} aria-label="Passing marks"/>`:s.pass}</td>
+ <${Actions} ed=${ed} onEdit=${()=>setEd(true)} onCancel=${()=>{setEd(false);setN(s.n);setM(s.max);setP(s.pass)}} onSave=${()=>{if(onSave(s.id,n.trim(),+m,+p))setEd(false)}} onDel=${()=>onDel(s.id)}/></tr>`}
+
+function Admin({S,set}){
+ const [msg,setMsg]=useState(null),[cn,setCn]=useState(''),[cs,setCs]=useState(''),[sn,setSn]=useState(''),[sm,setSm]=useState(100),[sp,setSp]=useState(33),[csv,setCsv]=useState('');
+ const ok=t=>setMsg({t,c:'g'}),er=t=>setMsg({t,c:'r'});
+ const cnt=id=>(S.students||[]).filter(s=>s.cid===id).length;
+ const dupC=(n,s,skip)=>(S.classes||[]).some(c=>c.id!==skip&&norm(c.name)===norm(n)&&norm(c.section)===norm(s));
+ const addC=()=>{const n=cn.trim(),s=cs.trim();if(!n)return er('Enter a class name.');if(dupC(n,s))return er(`${n} ${s} already exists.`);set(p=>({classes:[...(p.classes||[]),{id:p.nid,name:n,section:s}],nid:p.nid+1}));setCn('');setCs('');ok(`Added class ${n} ${s}.`)};
+ const saveC=(id,n,s)=>{if(!n){er('Class name cannot be empty.');return false}if(dupC(n,s,id)){er('Another class already has that name and section.');return false}set(p=>({classes:(p.classes||[]).map(c=>c.id===id?{...c,name:n,section:s}:c)}));ok('Class updated.');return true};
+ const delC=id=>{const ids=(S.students||[]).filter(s=>s.cid===id).map(s=>s.id);set(p=>({classes:(p.classes||[]).filter(c=>c.id!==id),students:(p.students||[]).filter(s=>s.cid!==id),marks:Object.fromEntries(Object.entries(p.marks||{}).filter(([k])=>!ids.includes(+k.split('|')[0])))}));ok(`Class deleted${ids.length?` with ${ids.length} students`:''}.`)};
+ const chk=(n,m,p,skip)=>{if(!n||!(m>0)||!(p>=0)||p>m){er('Enter a subject name, max marks above 0, and passing marks between 0 and max.');return false}const d=clash(S.subjects||[],n,skip);if(d){er(`"${n}" matches the existing subject "${d.n}". Subjects can't be added twice.`);return false}return true};
+ const addS=()=>{const n=sn.trim().replace(/\s+/g,' '),m=+sm,p=+sp;if(!chk(n,m,p))return;set(q=>({subjects:[...(q.subjects||[]),{id:q.nid,n,max:m,pass:p}],nid:q.nid+1}));setSn('');ok(`Added subject ${n}.`)};
+ const saveS=(id,n,m,p)=>{if(!chk(n,m,p,id))return false;set(q=>({subjects:(q.subjects||[]).map(s=>s.id===id?{...s,n,max:m,pass:p}:s)}));ok('Subject updated.');return true};
+ const delS=id=>{set(p=>({subjects:(p.subjects||[]).filter(s=>s.id!==id),marks:Object.fromEntries(Object.entries(p.marks||{}).filter(([k])=>+k.split('|')[1]!==id))}));ok('Subject deleted.')};
+ const delSt=id=>{set(p=>({students:(p.students||[]).filter(s=>s.id!==id),marks:Object.fromEntries(Object.entries(p.marks||{}).filter(([k])=>+k.split('|')[0]!==id))}));ok('Student deleted.')};
+ const imp=txt=>{let classes=[...(S.classes||[])],students=[...(S.students||[])],nid=S.nid,n=0;const bad=[];
+  txt.split(/\r?\n/).forEach((ln,i)=>{if(!ln.trim())return;const p=ln.split(',').map(x=>x.trim().replace(/^"|"$/g,''));
+   if(i===0&&/roll/i.test(p[0]))return;
+   if(p.length<5||!p[0]||!p[1]||!p[4])return bad.push(`line ${i+1} incomplete`);
+   const d=normDob(p[3]);if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return bad.push(`line ${i+1} bad date`);
+   let c=classes.find(c=>norm(lbl(c))===norm(p[4]))||(m=>m.length===1?m[0]:null)(classes.filter(c=>norm(c.name)===norm(p[4])));
+   if(!c){c={id:nid++,name:p[4],section:''};classes.push(c)}
+   if(students.some(s=>s.roll===p[0]&&s.cid===c.id))return bad.push(`line ${i+1} duplicate roll`);
+   students.push({id:nid++,roll:p[0],name:p[1],father:p[2],dob:d,cid:c.id});n++});
+  set({classes,students,nid});(n?ok:er)(`Imported ${n} student${n===1?'':'s'}.${bad.length?` Skipped ${bad.length}: ${bad.slice(0,4).join(', ')}.`:''}`);if(n)setCsv('')};
+ const cells=(S.students||[]).length*(S.subjects||[]).length,filled=(S.students||[]).reduce((a,s)=>a+(S.subjects||[]).filter(u=>{const k=(S.marks||{})[s.id+'|'+u.id]||{};return k.ab||k.m!=null}).length,0);
+ const stat=(l,v)=>html`<div className=${card+' !p-4'} key=${l}><div className="text-xs text-slate-500">${l}</div><div className="mt-1 text-2xl font-bold">${v}</div></div>`;
+ const ex=S.exam||{},setEx=o=>set(p=>({exam:{...(p.exam||{}),...o}}));
+ const sch=S.school||{name:'VIDYADAAN ERP',addr:'',session:'2025-26'},setSch=o=>set(p=>({school:{...(p.school||{}),...o}}));
+
+ const clearDb=()=>{
+  if(window.confirm('Are you sure you want to completely clear the database? All classes, subjects, students, and marks will be removed.')){
+    set(seed());
+    localStorage.removeItem(KEY);
+    ok('Database cleared successfully! Clean empty state ready.');
+  }
+ };
+
+ const loadDemo=()=>{
+  set(demoData());
+  ok('Demo sample data loaded.');
+ };
+
+ return html`<div className="space-y-4"><${Note} m=${msg}/>
+ <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">${stat('Students',(S.students||[]).length)}${stat('Classes',(S.classes||[]).length)}${stat('Subjects',(S.subjects||[]).length)}${stat('Marks entered',cells?Math.round(filled/cells*100)+'%':'0%')}</div>
+
+ <section className=${card}><h2 className="text-base font-semibold">School & Examination Details</h2>
+  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+   <div><label className=${lab} htmlFor="snm">School Name</label><input id="snm" className=${inp} value=${sch.name} onInput=${e=>setSch({name:e.target.value})} placeholder="School Name"/></div>
+   <div><label className=${lab} htmlFor="sad">School Address</label><input id="sad" className=${inp} value=${sch.addr} onInput=${e=>setSch({addr:e.target.value})} placeholder="Address / Location"/></div>
+   <div><label className=${lab} htmlFor="ssn">Session</label><input id="ssn" className=${inp} value=${sch.session} onInput=${e=>setSch({session:e.target.value})} placeholder="2025-26"/></div>
+  </div>
+  <div className="mt-3">
+   <label className=${lab} htmlFor="en">Exam Name</label><input id="en" className=${inp+' sm:max-w-sm'} value=${ex.name} onInput=${e=>setEx({name:e.target.value})} placeholder="Exam Name"/>
+  </div>
+  <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+   <div className="flex flex-wrap gap-6 text-sm">
+    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="h-5 w-5" checked=${!!ex.locked} onChange=${e=>setEx({locked:e.target.checked})}/>Lock marks entry <${Badge} t=${ex.locked?'Locked':'Open'} c=${ex.locked?'r':'g'}/></label>
+    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="h-5 w-5" checked=${!!ex.published} onChange=${e=>setEx({published:e.target.checked})}/>Publish results <${Badge} t=${ex.published?'Published':'Draft'} c=${ex.published?'g':'a'}/></label>
+   </div>
+   <div className="flex items-center gap-2">
+    <button className=${btnS+' text-slate-600 bg-slate-100 hover:bg-slate-200'} onClick=${loadDemo}>Load Demo Data</button>
+    <button className=${btnS+' text-red-700 bg-red-100 hover:bg-red-200 font-semibold'} onClick=${clearDb}>Clear Entire Database</button>
+   </div>
+  </div>
+ </section>
+
+ <section className=${card}><h2 className="text-base font-semibold">Classes</h2>
+  <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_8rem_auto]"><input className=${inp} placeholder="Class name, e.g. Class 10" aria-label="Class name" value=${cn} onInput=${e=>setCn(e.target.value)}/><input className=${inp} placeholder="Section, e.g. A" aria-label="Section" value=${cs} onInput=${e=>setCs(e.target.value)}/><button className=${btn} onClick=${addC}>Add class</button></div>
+  <${Table} head=${['Class Name','Section','Total Students','Actions']}>${(S.classes||[]).length?(S.classes||[]).map(c=>html`<${ClassRow} key=${c.id} c=${c} count=${cnt(c.id)} onSave=${saveC} onDel=${delC}/>`):html`<${Empty} n=${4} t="No classes yet. Add one above."/>`}<//></section>
+
+ <section className=${card}><h2 className="text-base font-semibold">Subjects</h2>
+  <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_7rem_7rem_auto]"><input className=${inp} placeholder="Subject name, e.g. Mathematics" aria-label="Subject name" value=${sn} onInput=${e=>setSn(e.target.value)}/><input type="number" className=${inp} aria-label="Max marks" value=${sm} onInput=${e=>setSm(e.target.value)}/><input type="number" className=${inp} aria-label="Passing marks" value=${sp} onInput=${e=>setSp(e.target.value)}/><button className=${btn} onClick=${addS}>Add subject</button></div>
+  <${Table} head=${['Subject Name','Max Marks','Passing Marks','Actions']}>${(S.subjects||[]).length?(S.subjects||[]).map(s=>html`<${SubRow} key=${s.id} s=${s} onSave=${saveS} onDel=${delS}/>`):html`<${Empty} n=${4} t="No subjects yet. Add one above."/>`}<//></section>
+
+ <section className=${card}><h2 className="text-base font-semibold">Students</h2><p className="mt-1 text-sm text-slate-500">Upload a CSV or paste rows: Roll Number, Full Name, Father Name, DOB (YYYY-MM-DD or DD/MM/YYYY), Class. A header row is skipped.</p>
+  <textarea rows="3" className=${inp+' mt-3 font-mono'} placeholder="101,Aarav Kumar,Ramesh Kumar,2010-05-14,Class 10 A" aria-label="CSV rows" value=${csv} onInput=${e=>setCsv(e.target.value)}></textarea>
+  <div className="mt-2 flex flex-wrap items-center gap-2"><input type="file" accept=".csv,text/csv" aria-label="CSV file" className="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm" onChange=${e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>imp(String(r.result).replace(/^\uFEFF/,''));r.readAsText(f);e.target.value=''}}/><button className=${btn} onClick=${()=>imp(csv)}>Import students</button></div>
+  <${Table} head=${['Roll','Name','Father','Class','Actions']}>${(S.students||[]).length?(S.students||[]).map(s=>html`<tr key=${s.id}><td className=${td}>${s.roll}</td><td className=${td+' font-medium'}>${s.name}</td><td className=${td}>${s.father}</td><td className=${td}>${lbl((S.classes||[]).find(c=>c.id===s.cid)||{name:'?'})}</td><td className=${td}><button className=${btnS+' text-red-600 hover:bg-red-50'} onClick=${()=>delSt(s.id)}>Delete</button></td></tr>`):html`<${Empty} n=${5} t="No students yet. Import CSV or paste rows above."/>`}<//></section></div>`}
+
+function Teacher({S,set}){
+ const classes = S.classes || [];
+ const subjects = S.subjects || [];
+ const [cid,setCid]=useState(classes[0]?.id);
+ const [sid,setSid]=useState(subjects[0]?.id);
+ const [warn,setWarn]=useState('');
+
+ const activeCid = cid ?? classes[0]?.id;
+ const activeSid = sid ?? subjects[0]?.id;
+ const cl = classes.find(c=>c.id===+activeCid) || classes[0];
+ const sub = subjects.find(s=>s.id===+activeSid) || subjects[0];
+
+ if(!cl||!sub)return html`<div className=${card}><p className="font-medium text-slate-700">No classes or subjects configured.</p><p className="mt-1 text-sm text-slate-500">Please add at least one class and one subject in the <strong>Admin Dashboard</strong> first to enter marks.</p></div>`;
+
+ const list = (S.students || []).filter(s=>s.cid===cl.id);
+ const L = !!(S.exam && S.exam.locked);
+ const marks = S.marks || {};
+ const key = s => s.id+'|'+sub.id;
+ const get = s => marks[key(s)] || {};
+ const put = (s,v) => set(p=>({marks:{...(p.marks||{}),[key(s)]:v}}));
+ const done = list.filter(s=>get(s).ab || get(s).m!=null).length;
+
+ return html`<section className=${card}><div className="flex items-center justify-between gap-2"><h2 className="text-base font-semibold">Marks entry grid</h2><${Badge} t=${L?'Locked':'Open for entry'} c=${L?'r':'g'}/></div>
+ ${L?html`<div className="mt-3"><${Note} m=${{t:'Marks Entry Locked by Admin. All fields are read-only.',c:'r'}}/></div>`:null}
+ <div className="mt-3 grid gap-3 sm:grid-cols-2">
+  <div><label className=${lab} htmlFor="tc">Class</label><select id="tc" className=${inp} value=${cl.id} onChange=${e=>{setCid(+e.target.value);setWarn('')}}>${classes.map(c=>html`<option key=${c.id} value=${c.id}>${lbl(c)}</option>`)}</select></div>
+  <div><label className=${lab} htmlFor="ts">Subject</label><select id="ts" className=${inp} value=${sub.id} onChange=${e=>{setSid(+e.target.value);setWarn('')}}>${subjects.map(s=>html`<option key=${s.id} value=${s.id}>${s.n}</option>`)}</select></div>
+ </div>
+ ${warn?html`<div className="mt-3"><${Note} m=${{t:warn,c:'r'}}/></div>`:null}
+ <${Table} head=${['Roll','Student','Marks (max '+sub.max+')','Absent']}>${list.length?list.map(s=>{const k=get(s);return html`<tr key=${s.id}><td className=${td}>${s.roll}</td><td className=${td+' font-medium'}>${s.name}</td>
+  <td className=${td}><input type="number" min="0" max=${sub.max} className=${inp+' w-28'} aria-label=${'Marks for '+s.name} disabled=${L||!!k.ab} value=${k.m??''} onInput=${e=>{const v=e.target.value;if(v===''){setWarn('');return put(s,{})}if(+v<0||+v>sub.max){setWarn(`${s.name}: marks must be between 0 and ${sub.max}.`);return}setWarn('');put(s,{m:+v})}}/></td>
+  <td className=${td}><input type="checkbox" className="h-4 w-4" aria-label=${s.name+' absent'} disabled=${L} checked=${!!k.ab} onChange=${e=>put(s,e.target.checked?{ab:1}:{})}/></td></tr>`}):html`<${Empty} n=${4} t="No students in this class. Import some in the Admin Dashboard."/>`}<//>
+ <p className="mt-3 text-sm text-slate-500" aria-live="polite">${done} of ${list.length} entered. Changes save automatically.</p></section>`}
+
+function Sheet({S,st}){
+ let tot=0,max=0,pass=true;
+ const cl=(S.classes||[]).find(c=>c.id===st.cid)||{name:''};
+ const subs=S.subjects||[];
+ const marks=S.marks||{};
+ const rows=subs.map(s=>{const k=marks[st.id+'|'+s.id]||{};max+=s.max;let mo,g,t;
+  if(k.ab){mo='AB';g='-';t='ABSENT';pass=false}else if(k.m==null){mo='-';g='-';t='PENDING';pass=false}else{mo=k.m;tot+=k.m;g=grade(k.m,s);t=k.m>=s.pass?'PASS':'FAIL';if(t==='FAIL')pass=false}
+  return html`<tr key=${s.id}><td className=${td+' font-medium'}>${s.n}</td><td className=${td}>${s.max}</td><td className=${td}>${s.pass}</td><td className=${td+' font-semibold'}>${mo}</td><td className=${td}>${g}</td><td className=${td}><${St} s=${t}/></td></tr>`});
+ const box=(l,v)=>html`<div className="rounded-lg bg-slate-50 p-3"><div className="text-xs text-slate-500">${l}</div><div className="mt-1 text-lg font-bold">${v}</div></div>`;
+ const f=(l,v)=>html`<div><span className="text-slate-500">${l}: </span><span className="font-medium">${v}</span></div>`;
+ const sch=S.school||{name:'VIDYADAAN ERP',addr:'',session:'2025-26'};
+ const ex=S.exam||{name:'Annual Examination'};
+ return html`<section className=${card+' print:border-0 print:p-0 print:shadow-none'}><div className="rounded-lg border-2 border-slate-800 p-5 print:border-black">
+  <div className="border-b-2 border-slate-800 pb-3 text-center"><h2 className="text-xl font-bold">${sch.name}</h2>${sch.addr?html`<p className="text-sm text-slate-600">${sch.addr}</p>`:null}<p className="mt-1 text-sm font-semibold">${ex.name} ${sch.session?`(Session ${sch.session})`:''}</p></div>
+  <div className="my-4 grid grid-cols-2 gap-1 text-sm">${f('Name',st.name)}${f('Roll no',st.roll)}${f("Father's name",st.father)}${f('Class',lbl(cl))}</div>
+  <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>${['Subject','Max','Pass','Obtained','Grade','Status'].map(h=>html`<th key=${h} className=${th}>${h}</th>`)}</tr></thead><tbody>${rows}</tbody></table></div>
+  <div className="mt-4 grid grid-cols-3 gap-3 text-center">${box('Total',tot+' / '+max)}${box('Percentage',(max?tot/max*100:0).toFixed(2)+'%')}${box('Result',html`<${St} s=${pass?'PASS':'FAIL'}/>`)}</div>
+  <p className="mt-4 text-xs text-slate-500">Verification ID: ${(ex.name||'EXAM').replace(/\W+/g,'').slice(0,6).toUpperCase()}-${st.cid}-${st.roll}. Grades: A+ 90%+, A 75%+, B 60%+, C pass, F fail. AB = absent.</p></div>
+  <button onClick=${()=>window.print()} className=${btn+' mt-4 print:hidden'}>Print / Save as PDF</button></section>`}
+
+function Public({S}){
+ const classes = S.classes || [];
+ const [cid,setCid]=useState(classes[0]?.id),[roll,setRoll]=useState(''),[mode,setMode]=useState('dob'),[v,setV]=useState(''),[err,setErr]=useState(''),[st,setSt]=useState(null);
+ const activeCid = cid ?? classes[0]?.id;
+ const ex = S.exam || {};
+ const go=()=>{
+  setSt(null);setErr('');
+  if(!classes.length)return setErr('No classes or results found.');
+  if(!roll.trim()||!v.trim())return setErr('Enter your roll number and the verification detail.');
+  const f=(S.students||[]).find(s=>s.cid===+activeCid&&s.roll===roll.trim()&&(mode==='dob'?normDob(s.dob)===normDob(v):norm(s.father)===norm(v)));
+  if(!f)return setErr('No student matched. Check the class, roll number and verification detail.');
+  if(!ex.published)return setErr('Results have not been published yet.');
+  setSt(f);
+ };
+ const tab=m=>'cursor-pointer rounded-md px-3 py-1.5 '+(mode===m?'bg-white shadow-sm':'');
+ return html`<div className="space-y-4"><section className=${card+' print:hidden'}><h2 className="text-base font-semibold">Find your result</h2><p className="mb-3 text-sm text-slate-500">${ex.name||'Result Portal'}</p>
+ ${ex.published?null:html`<${Note} m=${{t:'Results are not published yet. Please check back later.'}}/>`}
+ ${classes.length?html`
+ <div className="mt-3 grid gap-3 sm:grid-cols-2"><div><label className=${lab} htmlFor="pc">Class</label><select id="pc" className=${inp} value=${activeCid} onChange=${e=>setCid(+e.target.value)}>${classes.map(c=>html`<option key=${c.id} value=${c.id}>${lbl(c)}</option>`)}</select></div>
+ <div><label className=${lab} htmlFor="pr">Roll number</label><input id="pr" inputMode="numeric" className=${inp} value=${roll} onInput=${e=>setRoll(e.target.value)}/></div></div>
+ <div className="mt-3 inline-flex rounded-lg bg-slate-100 p-1 text-sm"><button className=${tab('dob')} onClick=${()=>{setMode('dob');setV('')}}>Date of birth</button><button className=${tab('father')} onClick=${()=>{setMode('father');setV('')}}>Father's name</button></div>
+ <div className="mt-3 sm:max-w-xs"><label className=${lab} htmlFor="pv">${mode==='dob'?'Date of birth':"Father's name"}</label><input id="pv" type=${mode==='dob'?'date':'text'} className=${inp} value=${v} onInput=${e=>setV(e.target.value)} onKeyDown=${e=>e.key==='Enter'&&go()}/></div>
+ <button className=${btn+' mt-4'} onClick=${go}>Show marksheet</button>
+ `:html`<div className="mt-3 text-sm text-slate-500">No classes or students added yet. Please configure classes in the Admin Dashboard.</div>`}
+ ${err?html`<div className="mt-3"><${Note} m=${{t:err,c:'r'}}/></div>`:null}</section>
+ ${st?html`<${Sheet} S=${S} st=${st}/>`:null}</div>`}
+
+function App(){
+ const [S,setS]=useState(load),[tab,setTab]=useState('admin');
+ useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},[S]);
+ const set=p=>setS(prev=>({...prev,...(typeof p==='function'?p(prev):p)}));
+ const T=[['admin','Admin Dashboard'],['teacher','Teacher Portal'],['public','Public Result Portal']];
+ const schoolName=(S.school&&S.school.name)||'VIDYADAAN ERP';
+ return html`<div><header className="bg-slate-900 text-white print:hidden"><div className="mx-auto max-w-5xl px-4 pt-4"><h1 className="text-lg font-semibold">${schoolName}</h1>
+  <nav className="mt-3 flex gap-1 overflow-x-auto" aria-label="Portals">${T.map(([k,l])=>html`<button key=${k} onClick=${()=>setTab(k)} aria-current=${tab===k} className=${'whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium '+(tab===k?'bg-slate-100 text-slate-900':'text-slate-300 hover:bg-slate-800')}>${l}</button>`)}</nav></div></header>
+  <main className="mx-auto max-w-5xl px-4 py-5">${tab==='admin'?html`<${Admin} S=${S} set=${set}/>`:tab==='teacher'?html`<${Teacher} S=${S} set=${set}/>`:html`<${Public} S=${S}/>`}</main></div>`}
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "cbse-school-erp",
+  "version": "1.0.0",
+  "description": "Complete CBSE School ERP with Admissions, Fee Management, Attendance, 9-Point CCE Report Cards, TC, and ID Cards",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "cbse",
+    "school-erp",
+    "school-management-system",
+    "report-card",
+    "fee-management",
+    "student-portal"
+  ],
+  "author": "Vidyadaan ERP Team",
+  "license": "MIT"
+}
