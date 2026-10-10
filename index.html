@@ -106,6 +106,12 @@
         centerHead: 'Director / Project Head',
         curriculum: 'CBSE Aligned Holistic Curriculum'
       },
+      security: {
+        adminUsername: 'admin',
+        adminPassword: 'admin123',
+        teacherUsername: 'teacher',
+        teacherPassword: 'teacher123'
+      },
       classes: [
         { id: 1, name: 'Class 10', section: 'A', capacity: 30 },
         { id: 2, name: 'Class 9', section: 'A', capacity: 30 },
@@ -146,8 +152,17 @@
     const loadState = () => {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) return JSON.parse(saved);
-        return getCleanState();
+        const clean = getCleanState();
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return {
+            ...clean,
+            ...parsed,
+            ngo: { ...clean.ngo, ...(parsed.ngo || {}) },
+            security: { ...clean.security, ...(parsed.security || {}) }
+          };
+        }
+        return clean;
       } catch (e) {
         return getCleanState();
       }
@@ -181,16 +196,300 @@
     };
 
     // ==========================================
+    // AUTHENTICATION & LOGIN GATE SYSTEM
+    // ==========================================
+    const AUTH_SESSION_KEY = 'vidyadaan_erp_auth_session';
+
+    const getInitialAuth = () => {
+      try {
+        const saved = localStorage.getItem(AUTH_SESSION_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.isAuthenticated && parsed.user) return parsed;
+        }
+      } catch (e) {}
+      return { isAuthenticated: false, user: null };
+    };
+
+    function LoginView({ S, onLogin, onOpenPublicLookup, notify }) {
+      const [selectedRole, setSelectedRole] = useState('admin'); // 'admin' or 'teacher'
+      const [username, setUsername] = useState('admin');
+      const [password, setPassword] = useState('admin123');
+      const [showPassword, setShowPassword] = useState(false);
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const security = S.security || {
+        adminUsername: 'admin',
+        adminPassword: 'admin123',
+        teacherUsername: 'teacher',
+        teacherPassword: 'teacher123'
+      };
+
+      const handleRoleTabChange = (role) => {
+        setSelectedRole(role);
+        setError('');
+        if (role === 'admin') {
+          setUsername(security.adminUsername || 'admin');
+          setPassword(security.adminPassword || 'admin123');
+        } else {
+          setUsername(security.teacherUsername || 'teacher');
+          setPassword(security.teacherPassword || 'teacher123');
+        }
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        setTimeout(() => {
+          setLoading(false);
+          const u = username.trim().toLowerCase();
+          const p = password;
+
+          if (selectedRole === 'admin') {
+            const expectedU = (security.adminUsername || 'admin').trim().toLowerCase();
+            const expectedP = security.adminPassword || 'admin123';
+            if (u === expectedU && p === expectedP) {
+              onLogin({
+                role: 'admin',
+                name: S.ngo?.centerHead || 'Administrator (Project Head)',
+                username: u,
+                email: S.ngo?.email || 'admin@vidyadaan.org'
+              });
+              return;
+            } else {
+              setError('Invalid Admin credentials. Default is admin / admin123');
+            }
+          } else {
+            // Teacher login: check default or teacher roster
+            const expectedU = (security.teacherUsername || 'teacher').trim().toLowerCase();
+            const expectedP = security.teacherPassword || 'teacher123';
+
+            const matchedTeacher = (S.teachers || []).find(t => 
+              (t.email && t.email.toLowerCase() === u) || 
+              (t.phone && t.phone === u) ||
+              (t.name && t.name.toLowerCase() === u)
+            );
+
+            if ((u === expectedU && p === expectedP) || (matchedTeacher && (p === expectedP || p === 'teacher123'))) {
+              onLogin({
+                role: 'teacher',
+                name: matchedTeacher ? matchedTeacher.name : 'Faculty Teacher',
+                username: u,
+                email: matchedTeacher?.email || 'teacher@vidyadaan.org'
+              });
+              return;
+            } else {
+              setError('Invalid Teacher credentials. Default is teacher / teacher123');
+            }
+          }
+        }, 200);
+      };
+
+      return html`
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 flex flex-col justify-center items-center p-4 selection:bg-emerald-500 selection:text-white">
+          <div className="w-full max-w-md my-auto">
+            <!-- Logo & Brand Header -->
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 mb-3 shadow-xl shadow-emerald-950/50 backdrop-blur-md">
+                <i className="fa-solid fa-graduation-cap text-3xl"></i>
+              </div>
+              <h1 className="text-2xl font-black text-white tracking-tight">
+                ${S.ngo?.name || 'VIDYADAAN NGO'}
+              </h1>
+              <p className="text-emerald-400 font-bold text-xs tracking-wider uppercase mt-0.5">
+                निःशुल्क शिक्षा पहल • Free School Management ERP
+              </p>
+              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700 text-slate-300 text-[11px] font-semibold">
+                <i className="fa-solid fa-lock text-emerald-400 text-xs"></i>
+                <span>Secure Access Restricted • Login Required</span>
+              </div>
+            </div>
+
+            <!-- Login Card -->
+            <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border border-slate-100">
+              <!-- Role Tabs -->
+              <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-slate-100 rounded-2xl mb-5">
+                <button
+                  type="button"
+                  onClick=${() => handleRoleTabChange('admin')}
+                  className=${`py-2.5 px-3 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-2 ${
+                    selectedRole === 'admin'
+                      ? 'bg-white text-slate-900 shadow-md'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  <i className="fa-solid fa-user-shield text-indigo-600"></i>
+                  <span>Admin Portal</span>
+                </button>
+                <button
+                  type="button"
+                  onClick=${() => handleRoleTabChange('teacher')}
+                  className=${`py-2.5 px-3 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-2 ${
+                    selectedRole === 'teacher'
+                      ? 'bg-white text-slate-900 shadow-md'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  <i className="fa-solid fa-chalkboard-user text-emerald-600"></i>
+                  <span>Teacher Portal</span>
+                </button>
+              </div>
+
+              <!-- Role Context Note -->
+              <div className=${`mb-5 p-3 rounded-xl text-xs flex items-center gap-2.5 border ${
+                selectedRole === 'admin'
+                  ? 'bg-indigo-50/80 border-indigo-100 text-indigo-900'
+                  : 'bg-emerald-50/80 border-emerald-100 text-emerald-900'
+              }`}>
+                <i className=${`fa-solid text-sm ${selectedRole === 'admin' ? 'fa-shield-halved text-indigo-600' : 'fa-book-open-reader text-emerald-600'}`}></i>
+                <span className="text-[11px] font-medium leading-tight">
+                  ${selectedRole === 'admin'
+                    ? 'Admin Access: Full control of student admissions, excel upload, staff, subjects & settings.'
+                    : 'Teacher Access: Class evaluations, marks entry, bulk marks upload & attendance register.'}
+                </span>
+              </div>
+
+              <!-- Error Alert -->
+              ${error && html`
+                <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2 animate-bounce">
+                  <i className="fa-solid fa-circle-exclamation text-red-500 text-sm"></i>
+                  <span>${error}</span>
+                </div>
+              `}
+
+              <!-- Form -->
+              <form onSubmit=${handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Username / ID
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                      <i className="fa-solid fa-user"></i>
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value=${username}
+                      onInput=${e => setUsername(e.target.value)}
+                      placeholder=${selectedRole === 'admin' ? 'admin' : 'teacher'}
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 flex justify-between items-center">
+                    <span>Password</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Case-sensitive</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                      <i className="fa-solid fa-lock"></i>
+                    </div>
+                    <input
+                      type=${showPassword ? 'text' : 'password'}
+                      required
+                      value=${password}
+                      onInput=${e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                    />
+                    <button
+                      type="button"
+                      onClick=${() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      <i className=${`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button
+                  type="submit"
+                  disabled=${loading}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-lg shadow-slate-900/20 hover:shadow-emerald-600/30 transition duration-200 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  ${loading
+                    ? html`<i className="fa-solid fa-circle-notch fa-spin"></i> Authenticating...`
+                    : html`<i className="fa-solid fa-arrow-right-to-bracket"></i> Sign In to ${selectedRole === 'admin' ? 'Admin' : 'Teacher'} Portal`}
+                </button>
+              </form>
+
+              <!-- One-Click Quick Fill Credentials -->
+              <div className="mt-5 pt-4 border-t border-slate-100">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2">
+                  One-Click Default Credentials
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick=${() => {
+                      setSelectedRole('admin');
+                      setUsername(security.adminUsername || 'admin');
+                      setPassword(security.adminPassword || 'admin123');
+                      setError('');
+                    }}
+                    className="py-1.5 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold border border-indigo-200 text-center transition"
+                  >
+                    Fill Admin (${security.adminUsername || 'admin'})
+                  </button>
+                  <button
+                    type="button"
+                    onClick=${() => {
+                      setSelectedRole('teacher');
+                      setUsername(security.teacherUsername || 'teacher');
+                      setPassword(security.teacherPassword || 'teacher123');
+                      setError('');
+                    }}
+                    className="py-1.5 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold border border-emerald-200 text-center transition"
+                  >
+                    Fill Teacher (${security.teacherUsername || 'teacher'})
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Public Result Lookup Link -->
+            <div className="mt-5 text-center">
+              <button
+                type="button"
+                onClick=${onOpenPublicLookup}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-800/90 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 border border-slate-700 text-xs font-bold transition shadow-xl"
+              >
+                <i className="fa-solid fa-graduation-cap"></i>
+                <span>Student / Parent Result Lookup (परिणाम पोर्टल) →</span>
+              </button>
+            </div>
+
+            <!-- Footer -->
+            <p className="text-center text-[11px] text-slate-500 mt-5">
+              © 2026 ${S.ngo?.name || 'VIDYADAAN NGO'}. All Rights Reserved.<br/>
+              <span className="text-slate-400 text-[10px]">100% Free Education Initiative • No Fees Policy</span>
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
     // MAIN APP COMPONENT
     // ==========================================
     function App() {
       const [S, setS] = useState(loadState);
-      const [role, setRole] = useState('admin'); // 'admin', 'teacher', 'public'
-      const [view, setView] = useState('dashboard'); // 'dashboard', 'teachers', 'students', 'classes', 'subjects', 'results', 'attendance', 'assignments', 'announcements', 'events', 'tc_studio', 'settings'
+      const [auth, setAuth] = useState(getInitialAuth);
+      const [isPublicLookup, setIsPublicLookup] = useState(false);
+      const [view, setView] = useState(() => (auth.user?.role === 'teacher' ? 'results' : 'dashboard'));
       const [sidebarOpen, setSidebarOpen] = useState(false);
       const [activeModal, setActiveModal] = useState(null); // 'student_form', 'report_card', 'tc', 'id_card', 'event_form', 'announcement_form'
       const [modalData, setModalData] = useState(null);
       const [toast, setToast] = useState(null);
+
+      const role = auth.user?.role || 'admin';
 
       // Save to localStorage automatically
       useEffect(() => {
@@ -213,16 +512,92 @@
         }));
       };
 
-      // Menu structure inspired by the top GitHub School ERP
-      const menuItems = [
+      const handleLogin = (user) => {
+        const newAuth = { isAuthenticated: true, user };
+        setAuth(newAuth);
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(newAuth));
+        if (user.role === 'teacher') {
+          setView('results');
+        } else {
+          setView('dashboard');
+        }
+        notify(`Welcome back, ${user.name}! Logged in as ${user.role.toUpperCase()}.`, 'success');
+      };
+
+      const handleLogout = () => {
+        if (confirm('Are you sure you want to log out of Vidyadaan School ERP?')) {
+          localStorage.removeItem(AUTH_SESSION_KEY);
+          setAuth({ isAuthenticated: false, user: null });
+          setIsPublicLookup(false);
+          setView('dashboard');
+          notify('Logged out successfully.', 'info');
+        }
+      };
+
+      // Unauthenticated gate: show Public Lookup OR Login Gate
+      if (!auth.isAuthenticated) {
+        if (isPublicLookup) {
+          return html`
+            <div className="min-h-screen bg-[#F7F8FA] flex flex-col">
+              <!-- Public Lookup Header -->
+              <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-8 flex items-center justify-between no-print shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                    <i className="fa-solid fa-graduation-cap"></i>
+                  </div>
+                  <div>
+                    <h1 className="text-sm font-extrabold text-slate-800 leading-none">${S.ngo.name}</h1>
+                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Online Result Verification Portal</p>
+                  </div>
+                </div>
+                <button
+                  onClick=${() => setIsPublicLookup(false)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition shadow"
+                >
+                  <i className="fa-solid fa-arrow-left"></i>
+                  <span>Return to Staff Login</span>
+                </button>
+              </header>
+
+              <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full">
+                <div className="mb-4 text-center">
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
+                    <i className="fa-solid fa-circle-check mr-1 text-emerald-600"></i> Public Student Result Lookup
+                  </span>
+                </div>
+                <${PublicPortalView} S=${S} setActiveModal=${setActiveModal} setModalData=${setModalData}/>
+              </main>
+
+              <!-- Modals for Report Card Print in Public Mode -->
+              ${activeModal === 'report_card' && html`<${ReportCardModal} S=${S} student=${modalData} close=${() => setActiveModal(null)}/>`}
+            </div>
+          `;
+        }
+
+        return html`
+          <div>
+            ${toast && html`
+              <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white transition-all transform animate-bounce ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}}>
+                <i className=${toast.type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}></i>
+                <span>${toast.msg}</span>
+                <button onClick=${() => setToast(null)} className="ml-2 hover:opacity-75"><i className="fa-solid fa-xmark"></i></button>
+              </div>
+            `}
+            <${LoginView} S=${S} onLogin=${handleLogin} onOpenPublicLookup=${() => setIsPublicLookup(true)} notify=${notify}/>
+          </div>
+        `;
+      }
+
+      // Role-based Navigation Menus
+      const adminMenuItems = [
         {
-          title: 'MENU',
+          title: 'ADMINISTRATION',
           items: [
-            { id: 'dashboard', label: 'Dashboard', icon: 'home.png', fa: 'fa-house' },
+            { id: 'dashboard', label: 'Executive Dashboard', icon: 'home.png', fa: 'fa-house' },
             { id: 'students', label: 'Students (SIS)', icon: 'student.png', fa: 'fa-user-graduate' },
             { id: 'teachers', label: 'Volunteers / Teachers', icon: 'teacher.png', fa: 'fa-chalkboard-user' },
             { id: 'classes', label: 'Classes & Sections', icon: 'class.png', fa: 'fa-school' },
-            { id: 'subjects', label: 'Subjects', icon: 'subject.png', fa: 'fa-book-open' },
+            { id: 'subjects', label: 'Subjects Curriculum', icon: 'subject.png', fa: 'fa-book-open' },
             { id: 'results', label: 'Evaluation & Results', icon: 'result.png', fa: 'fa-square-poll-vertical' },
             { id: 'attendance', label: 'Attendance Register', icon: 'attendance.png', fa: 'fa-clipboard-user' },
             { id: 'assignments', label: 'Homework / Tasks', icon: 'assignment.png', fa: 'fa-book' },
@@ -232,19 +607,42 @@
           ]
         },
         {
-          title: 'OTHER',
+          title: 'SYSTEM & SETTINGS',
           items: [
-            { id: 'public_portal', label: 'Public Result Portal', icon: 'view.png', fa: 'fa-globe' },
-            { id: 'settings', label: 'NGO Settings & Backup', icon: 'setting.png', fa: 'fa-sliders' }
+            { id: 'public_portal', label: 'Public Result Lookup', icon: 'view.png', fa: 'fa-globe' },
+            { id: 'settings', label: 'NGO Settings & Passwords', icon: 'setting.png', fa: 'fa-sliders' }
           ]
         }
       ];
+
+      const teacherMenuItems = [
+        {
+          title: 'FACULTY ACADEMICS',
+          items: [
+            { id: 'results', label: 'Evaluation & Results', icon: 'result.png', fa: 'fa-square-poll-vertical' },
+            { id: 'attendance', label: 'Attendance Register', icon: 'attendance.png', fa: 'fa-clipboard-user' },
+            { id: 'assignments', label: 'Homework / Tasks', icon: 'assignment.png', fa: 'fa-book' },
+            { id: 'students', label: 'Student Directory', icon: 'student.png', fa: 'fa-user-graduate' },
+            { id: 'events', label: 'Events Calendar', icon: 'calendar.png', fa: 'fa-calendar-days' },
+            { id: 'announcements', label: 'Notice Board', icon: 'announcement.png', fa: 'fa-bullhorn' },
+            { id: 'tc_studio', label: 'TC & ID Card Studio', icon: 'exam.png', fa: 'fa-id-card' }
+          ]
+        },
+        {
+          title: 'VERIFICATION',
+          items: [
+            { id: 'public_portal', label: 'Public Result Lookup', icon: 'view.png', fa: 'fa-globe' }
+          ]
+        }
+      ];
+
+      const menuItems = role === 'teacher' ? teacherMenuItems : adminMenuItems;
 
       return html`
         <div className="flex h-screen overflow-hidden">
           <!-- Notification Toast -->
           ${toast && html`
-            <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white transition-all transform animate-bounce ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}">
+            <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white transition-all transform animate-bounce ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}}>
               <i className=${toast.type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}></i>
               <span>${toast.msg}</span>
               <button onClick=${() => setToast(null)} className="ml-2 hover:opacity-75"><i className="fa-solid fa-xmark"></i></button>
@@ -252,7 +650,7 @@
           `}
 
           <!-- Sidebar (Top GitHub School ERP Style) -->
-          <aside className=${`sidebar-container fixed inset-y-0 left-0 z-40 w-[14%] min-w-[230px] bg-white border-r border-slate-100 flex flex-col transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <aside className=${`sidebar-container fixed inset-y-0 left-0 z-40 w-[14%] min-w-[240px] bg-white border-r border-slate-100 flex flex-col transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <!-- Logo & Brand Header -->
             <div className="h-16 px-4 flex items-center justify-between border-b border-slate-100">
               <div className="flex items-center gap-2.5">
@@ -267,28 +665,23 @@
               </button>
             </div>
 
-            <!-- Role Selector -->
-            <div className="p-3 border-b border-slate-100 bg-slate-50/70">
-              <div className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 px-1">Role Switcher</div>
-              <div className="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-xl text-center text-[11px] font-bold">
-                <button
-                  onClick=${() => { setRole('admin'); setSidebarOpen(false); }}
-                  className=${`py-1 rounded-lg transition ${role === 'admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                >
-                  Admin
-                </button>
-                <button
-                  onClick=${() => { setRole('teacher'); setView('results'); setSidebarOpen(false); }}
-                  className=${`py-1 rounded-lg transition ${role === 'teacher' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                >
-                  Teacher
-                </button>
-                <button
-                  onClick=${() => { setRole('public'); setView('public_portal'); setSidebarOpen(false); }}
-                  className=${`py-1 rounded-lg transition ${role === 'public' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                >
-                  Public
-                </button>
+            <!-- Authenticated User Profile Pill (Replaces old switcher) -->
+            <div className="p-3 border-b border-slate-100 bg-slate-50/80">
+              <div className="flex items-center gap-2.5">
+                <div className=${`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs text-white shadow-sm ${
+                  role === 'admin' ? 'bg-indigo-600' : 'bg-emerald-600'
+                }`}>
+                  <i className=${`fa-solid ${role === 'admin' ? 'fa-user-shield' : 'fa-chalkboard-user'}`}></i>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-extrabold text-xs text-slate-800 truncate">${auth.user?.name || (role === 'admin' ? 'Administrator' : 'Faculty Teacher')}</div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className=${`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                      role === 'admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'
+                    }`}>${role}</span>
+                    <span className="text-[9px] text-slate-400 font-medium">● Online</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -318,10 +711,19 @@
               `)}
             </nav>
 
-            <!-- Bottom Badge -->
-            <div className="p-3 border-t border-slate-100 bg-slate-50 text-[10px] text-slate-500 flex items-center justify-between">
-              <span>Session ${S.ngo.session}</span>
-              <span className="font-bold text-emerald-600">● 100% Free NGO</span>
+            <!-- Bottom Badge & Logout -->
+            <div className="p-3 border-t border-slate-100 bg-slate-50 space-y-2">
+              <div className="text-[10px] text-slate-500 flex items-center justify-between">
+                <span>Session ${S.ngo.session}</span>
+                <span className="font-bold text-emerald-600">● 100% Free NGO</span>
+              </div>
+              <button
+                onClick=${handleLogout}
+                className="w-full py-2 px-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              >
+                <i className="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                <span>Logout Session</span>
+              </button>
             </div>
           </aside>
 
@@ -346,38 +748,64 @@
                 </div>
               </div>
 
-              <!-- Top Right User Badge -->
+              <!-- Top Right User Badge & Logout -->
               <div className="flex items-center gap-3">
                 <span className="hidden sm:inline-block px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold">
                   <i className="fa-solid fa-hand-holding-heart mr-1"></i> Free Education Initiative
                 </span>
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700">
-                    ${role === 'admin' ? 'AD' : role === 'teacher' ? 'TR' : 'PB'}
+                  <div className=${`w-9 h-9 rounded-full flex items-center justify-center font-black text-xs text-white ${
+                    role === 'admin' ? 'bg-indigo-600' : 'bg-emerald-600'
+                  }`}>
+                    ${role === 'admin' ? 'AD' : 'TR'}
                   </div>
                   <div className="hidden md:block text-left text-xs leading-tight">
-                    <div className="font-bold text-slate-800 capitalize">${role} Portal</div>
-                    <div className="text-[10px] text-slate-400">Vidyadaan NGO</div>
+                    <div className="font-bold text-slate-800 capitalize">${auth.user?.name || (role === 'admin' ? 'Administrator' : 'Faculty')}</div>
+                    <div className="text-[10px] text-slate-400 capitalize">${role} Portal</div>
                   </div>
                 </div>
+                <button
+                  onClick=${handleLogout}
+                  title="Logout Session"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold transition shadow-sm ml-1 cursor-pointer"
+                >
+                  <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
               </div>
             </header>
 
-            <!-- Scrollable Page Views -->
+            <!-- Scrollable Page Views with Route Guard -->
             <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
-              ${view === 'dashboard' && html`<${DashboardView} S=${S} set=${set} setView=${setView} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
-              ${view === 'students' && html`<${StudentsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
-              ${view === 'teachers' && html`<${TeachersView} S=${S} set=${set} notify=${notify}/>`}
-              ${view === 'classes' && html`<${ClassesView} S=${S} set=${set} notify=${notify}/>`}
-              ${view === 'subjects' && html`<${SubjectsView} S=${S} set=${set} notify=${notify}/>`}
-              ${view === 'results' && html`<${ResultsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
-              ${view === 'attendance' && html`<${AttendanceView} S=${S} set=${set} notify=${notify}/>`}
-              ${view === 'assignments' && html`<${AssignmentsView} S=${S} set=${set} notify=${notify}/>`}
-              ${view === 'events' && html`<${EventsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
-              ${view === 'announcements' && html`<${AnnouncementsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
-              ${view === 'tc_studio' && html`<${TcStudioView} S=${S} setActiveModal=${setActiveModal} setModalData=${setModalData}/>`}
-              ${view === 'public_portal' && html`<${PublicPortalView} S=${S} setActiveModal=${setActiveModal} setModalData=${setModalData}/>`}
-              ${view === 'settings' && html`<${SettingsView} S=${S} set=${set} notify=${notify}/>`}
+              ${role !== 'admin' && (view === 'settings' || view === 'classes' || view === 'subjects' || view === 'teachers') ? html`
+                <div className="p-8 text-center bg-white rounded-3xl border border-red-100 shadow-sm max-w-lg mx-auto my-12">
+                  <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-500 mx-auto flex items-center justify-center text-2xl mb-4">
+                    <i className="fa-solid fa-lock"></i>
+                  </div>
+                  <h3 className="text-base font-bold text-slate-800">Admin Privileges Required</h3>
+                  <p className="text-xs text-slate-500 mt-1">This module is reserved for NGO Administrator access only.</p>
+                  <button
+                    onClick=${() => setView('results')}
+                    className="mt-5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow"
+                  >
+                    Go to Teacher Evaluation Portal
+                  </button>
+                </div>
+              ` : html`
+                ${view === 'dashboard' && html`<${DashboardView} S=${S} set=${set} setView=${setView} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+                ${view === 'students' && html`<${StudentsView} S=${S} set=${set} role=${role} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+                ${view === 'teachers' && html`<${TeachersView} S=${S} set=${set} notify=${notify}/>`}
+                ${view === 'classes' && html`<${ClassesView} S=${S} set=${set} notify=${notify}/>`}
+                ${view === 'subjects' && html`<${SubjectsView} S=${S} set=${set} notify=${notify}/>`}
+                ${view === 'results' && html`<${ResultsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+                ${view === 'attendance' && html`<${AttendanceView} S=${S} set=${set} notify=${notify}/>`}
+                ${view === 'assignments' && html`<${AssignmentsView} S=${S} set=${set} notify=${notify}/>`}
+                ${view === 'events' && html`<${EventsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+                ${view === 'announcements' && html`<${AnnouncementsView} S=${S} set=${set} setActiveModal=${setActiveModal} setModalData=${setModalData} notify=${notify}/>`}
+                ${view === 'tc_studio' && html`<${TcStudioView} S=${S} setActiveModal=${setActiveModal} setModalData=${setModalData}/>`}
+                ${view === 'public_portal' && html`<${PublicPortalView} S=${S} setActiveModal=${setActiveModal} setModalData=${setModalData}/>`}
+                ${view === 'settings' && html`<${SettingsView} S=${S} set=${set} notify=${notify}/>`}
+              `}
             </main>
           </div>
 
@@ -549,7 +977,7 @@
     // ==========================================
     // 2. STUDENTS VIEW (FULL CRUD & EXCEL IMPORT/EXPORT)
     // ==========================================
-    function StudentsView({ S, set, setActiveModal, setModalData, notify }) {
+    function StudentsView({ S, set, role = 'admin', setActiveModal, setModalData, notify }) {
       const [search, setSearch] = useState('');
       const [filterClass, setFilterClass] = useState('');
       const [csvText, setCsvText] = useState('');
@@ -841,13 +1269,15 @@
                           >
                             <img src="update.png" className="w-3.5 h-3.5"/>
                           </button>
-                          <button
-                            title="Delete Student"
-                            onClick=${() => handleDeleteStudent(st.id)}
-                            className="w-7 h-7 rounded-full bg-red-100 hover:bg-red-200 inline-flex items-center justify-center text-red-600"
-                          >
-                            <img src="delete.png" className="w-3.5 h-3.5"/>
-                          </button>
+                          ${role === 'admin' && html`
+                            <button
+                              title="Delete Student"
+                              onClick=${() => handleDeleteStudent(st.id)}
+                              className="w-7 h-7 rounded-full bg-red-100 hover:bg-red-200 inline-flex items-center justify-center text-red-600"
+                            >
+                              <img src="delete.png" className="w-3.5 h-3.5"/>
+                            </button>
+                          `}
                         </td>
                       </tr>
                     `;
@@ -1859,11 +2289,23 @@
     // ==========================================
     function SettingsView({ S, set, notify }) {
       const [ngo, setNgo] = useState(S.ngo);
+      const [sec, setSec] = useState(S.security || {
+        adminUsername: 'admin',
+        adminPassword: 'admin123',
+        teacherUsername: 'teacher',
+        teacherPassword: 'teacher123'
+      });
 
       const saveSettings = (e) => {
         e.preventDefault();
-        set({ ngo });
-        notify('NGO configuration saved!');
+        set({ ngo, security: sec });
+        notify('NGO configuration & login credentials saved!');
+      };
+
+      const saveSecurity = (e) => {
+        e.preventDefault();
+        set({ security: sec });
+        notify('Login passwords and credentials updated successfully!');
       };
 
       const exportBackup = () => {
@@ -1978,6 +2420,83 @@
                   <i className="fa-solid fa-floppy-disk mr-1.5"></i> Save NGO Profile
                 </button>
               </div>
+            </form>
+          <//>
+
+          <!-- Access Control & Password Management Card -->
+          <${Card}>
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-4">
+              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                <i className="fa-solid fa-lock text-indigo-600"></i>
+                <span>Access Control & Security Passwords (लॉगिन पासवर्ड प्रबंधन)</span>
+              </h4>
+              <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">Admin Only</span>
+            </div>
+            <form onSubmit=${saveSecurity} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <!-- Admin Credentials -->
+                <div className="p-4 rounded-2xl border border-indigo-100 bg-indigo-50/30 space-y-3">
+                  <div className="font-bold text-indigo-900 flex items-center gap-1.5 text-xs">
+                    <i className="fa-solid fa-user-shield text-indigo-600"></i>
+                    <span>Administrator Credentials</span>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Admin Username</label>
+                    <input
+                      type="text"
+                      required
+                      value=${sec.adminUsername}
+                      onInput=${e => setSec({ ...sec, adminUsername: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-bold bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Admin Password</label>
+                    <input
+                      type="text"
+                      required
+                      value=${sec.adminPassword}
+                      onInput=${e => setSec({ ...sec, adminPassword: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-bold bg-white"
+                    />
+                  </div>
+                </div>
+
+                <!-- Teacher Credentials -->
+                <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50/30 space-y-3">
+                  <div className="font-bold text-emerald-900 flex items-center gap-1.5 text-xs">
+                    <i className="fa-solid fa-chalkboard-user text-emerald-600"></i>
+                    <span>Teacher Default Credentials</span>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Teacher Username</label>
+                    <input
+                      type="text"
+                      required
+                      value=${sec.teacherUsername}
+                      onInput=${e => setSec({ ...sec, teacherUsername: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-bold bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Teacher Password</label>
+                    <input
+                      type="text"
+                      required
+                      value=${sec.teacherPassword}
+                      onInput=${e => setSec({ ...sec, teacherPassword: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-slate-200 outline-none font-bold bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs shadow transition flex items-center gap-2 cursor-pointer"
+              >
+                <i className="fa-solid fa-key"></i>
+                <span>Update Login Passwords</span>
+              </button>
             </form>
           <//>
 
