@@ -20,10 +20,10 @@
       ]
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/public/:match*",
-      "destination": "/:match*"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }

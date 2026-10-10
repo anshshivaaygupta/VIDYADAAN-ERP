@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>VIDYADAAN NGO - Complete School Management ERP</title>
-  <link rel="icon" href="public/logo.png" type="image/png">
+  <link rel="icon" href="logo.png" type="image/png">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script>
@@ -163,16 +163,16 @@
     // Shared Reusable Metric Card (Lama Dev Style)
     const UserCard = ({ type, count, label, bgClass }) => {
       const icons = {
-        student: 'public/student.png',
-        teacher: 'public/teacher.png',
-        parent: 'public/parent.png',
-        class: 'public/class.png'
+        student: 'student.png',
+        teacher: 'teacher.png',
+        parent: 'parent.png',
+        class: 'class.png'
       };
       return html`
         <div className=${`rounded-2xl p-4 flex-1 min-w-[130px] ${bgClass} shadow-sm`}>
           <div className="flex justify-between items-center">
             <span className="text-[10px] bg-white px-2 py-1 rounded-full text-slate-700 font-bold">2025/26</span>
-            <img src=${icons[type] || 'public/more.png'} alt="" className="w-5 h-5 opacity-70" onError=${e => e.target.style.display='none'}/>
+            <img src=${icons[type] || 'more.png'} alt="" className="w-5 h-5 opacity-70" onError=${e => e.target.style.display='none'}/>
           </div>
           <h2 className="text-2xl font-bold my-3 text-slate-900">${count}</h2>
           <h3 className="capitalize text-xs font-semibold text-slate-600">${label}</h3>
@@ -218,24 +218,24 @@
         {
           title: 'MENU',
           items: [
-            { id: 'dashboard', label: 'Dashboard', icon: 'public/home.png', fa: 'fa-house' },
-            { id: 'students', label: 'Students (SIS)', icon: 'public/student.png', fa: 'fa-user-graduate' },
-            { id: 'teachers', label: 'Volunteers / Teachers', icon: 'public/teacher.png', fa: 'fa-chalkboard-user' },
-            { id: 'classes', label: 'Classes & Sections', icon: 'public/class.png', fa: 'fa-school' },
-            { id: 'subjects', label: 'Subjects', icon: 'public/subject.png', fa: 'fa-book-open' },
-            { id: 'results', label: 'Evaluation & Results', icon: 'public/result.png', fa: 'fa-square-poll-vertical' },
-            { id: 'attendance', label: 'Attendance Register', icon: 'public/attendance.png', fa: 'fa-clipboard-user' },
-            { id: 'assignments', label: 'Homework / Tasks', icon: 'public/assignment.png', fa: 'fa-book' },
-            { id: 'events', label: 'Events Calendar', icon: 'public/calendar.png', fa: 'fa-calendar-days' },
-            { id: 'announcements', label: 'Notice Board', icon: 'public/announcement.png', fa: 'fa-bullhorn' },
-            { id: 'tc_studio', label: 'TC & ID Card Studio', icon: 'public/exam.png', fa: 'fa-id-card' }
+            { id: 'dashboard', label: 'Dashboard', icon: 'home.png', fa: 'fa-house' },
+            { id: 'students', label: 'Students (SIS)', icon: 'student.png', fa: 'fa-user-graduate' },
+            { id: 'teachers', label: 'Volunteers / Teachers', icon: 'teacher.png', fa: 'fa-chalkboard-user' },
+            { id: 'classes', label: 'Classes & Sections', icon: 'class.png', fa: 'fa-school' },
+            { id: 'subjects', label: 'Subjects', icon: 'subject.png', fa: 'fa-book-open' },
+            { id: 'results', label: 'Evaluation & Results', icon: 'result.png', fa: 'fa-square-poll-vertical' },
+            { id: 'attendance', label: 'Attendance Register', icon: 'attendance.png', fa: 'fa-clipboard-user' },
+            { id: 'assignments', label: 'Homework / Tasks', icon: 'assignment.png', fa: 'fa-book' },
+            { id: 'events', label: 'Events Calendar', icon: 'calendar.png', fa: 'fa-calendar-days' },
+            { id: 'announcements', label: 'Notice Board', icon: 'announcement.png', fa: 'fa-bullhorn' },
+            { id: 'tc_studio', label: 'TC & ID Card Studio', icon: 'exam.png', fa: 'fa-id-card' }
           ]
         },
         {
           title: 'OTHER',
           items: [
-            { id: 'public_portal', label: 'Public Result Portal', icon: 'public/view.png', fa: 'fa-globe' },
-            { id: 'settings', label: 'NGO Settings & Backup', icon: 'public/setting.png', fa: 'fa-sliders' }
+            { id: 'public_portal', label: 'Public Result Portal', icon: 'view.png', fa: 'fa-globe' },
+            { id: 'settings', label: 'NGO Settings & Backup', icon: 'setting.png', fa: 'fa-sliders' }
           ]
         }
       ];
@@ -256,7 +256,7 @@
             <!-- Logo & Brand Header -->
             <div className="h-16 px-4 flex items-center justify-between border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <img src="public/logo.png" alt="logo" className="w-8 h-8 rounded-lg" onError=${e => { e.target.onerror=null; e.target.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%2310B981"/><text x="50" y="65" font-size="45" text-anchor="middle" fill="white">V</text></svg>'; }}/>
+                <img src="logo.png" alt="logo" className="w-8 h-8 rounded-lg" onError=${e => { e.target.onerror=null; e.target.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%2310B981"/><text x="50" y="65" font-size="45" text-anchor="middle" fill="white">V</text></svg>'; }}/>
                 <div>
                   <h1 className="font-extrabold text-sm text-slate-800 leading-none">VIDYADAAN</h1>
                   <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Free School ERP</span>
@@ -444,7 +444,7 @@
               <${Card}>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <img src="public/student.png" className="w-5 h-5"/>
+                    <img src="student.png" className="w-5 h-5"/>
                     <h3 className="text-sm font-bold text-slate-800">Enrolled Students</h3>
                   </div>
                   <button onClick=${() => setView('students')} className="text-xs font-bold text-indigo-600 hover:underline">
@@ -500,7 +500,7 @@
               <${Card}>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <h4 className="font-bold text-xs text-slate-800 flex items-center gap-2">
-                    <img src="public/announcement.png" className="w-4 h-4"/>
+                    <img src="announcement.png" className="w-4 h-4"/>
                     <span>Notice Board</span>
                   </h4>
                   <button onClick=${() => setView('announcements')} className="text-[11px] font-bold text-indigo-600 hover:underline">
@@ -524,7 +524,7 @@
               <${Card}>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <h4 className="font-bold text-xs text-slate-800 flex items-center gap-2">
-                    <img src="public/calendar.png" className="w-4 h-4"/>
+                    <img src="calendar.png" className="w-4 h-4"/>
                     <span>Upcoming Events</span>
                   </h4>
                   <button onClick=${() => setView('events')} className="text-[11px] font-bold text-indigo-600 hover:underline">
@@ -700,7 +700,7 @@
           <${Card} className="bg-indigo-50/20 border-indigo-100">
             <div className="flex items-center justify-between pb-3 border-b border-indigo-100">
               <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                <img src="public/upload.png" className="w-4 h-4"/>
+                <img src="upload.png" className="w-4 h-4"/>
                 <span>Bulk Student Import via Excel / CSV</span>
               </h4>
               <span className="text-[11px] text-slate-500">Upload 100+ students instantly</span>
@@ -818,14 +818,14 @@
                             onClick=${() => { setActiveModal('report_card'); setModalData(st); }}
                             className="w-7 h-7 rounded-full bg-lamaSky hover:bg-lamaSky/80 inline-flex items-center justify-center text-slate-800"
                           >
-                            <img src="public/result.png" className="w-3.5 h-3.5"/>
+                            <img src="result.png" className="w-3.5 h-3.5"/>
                           </button>
                           <button
                             title="Print Student ID Card"
                             onClick=${() => { setActiveModal('id_card'); setModalData(st); }}
                             className="w-7 h-7 rounded-full bg-lamaPurple hover:bg-lamaPurple/80 inline-flex items-center justify-center text-slate-800"
                           >
-                            <img src="public/exam.png" className="w-3.5 h-3.5"/>
+                            <img src="exam.png" className="w-3.5 h-3.5"/>
                           </button>
                           <button
                             title="Generate Transfer Certificate"
@@ -839,14 +839,14 @@
                             onClick=${() => { setActiveModal('student_form'); setModalData(st); }}
                             className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 inline-flex items-center justify-center text-slate-600"
                           >
-                            <img src="public/update.png" className="w-3.5 h-3.5"/>
+                            <img src="update.png" className="w-3.5 h-3.5"/>
                           </button>
                           <button
                             title="Delete Student"
                             onClick=${() => handleDeleteStudent(st.id)}
                             className="w-7 h-7 rounded-full bg-red-100 hover:bg-red-200 inline-flex items-center justify-center text-red-600"
                           >
-                            <img src="public/delete.png" className="w-3.5 h-3.5"/>
+                            <img src="delete.png" className="w-3.5 h-3.5"/>
                           </button>
                         </td>
                       </tr>
@@ -854,7 +854,7 @@
                   }) : html`
                     <tr>
                       <td colSpan="8" className="py-12 text-center text-xs text-slate-400">
-                        <img src="public/noAvatar.png" className="w-12 h-12 mx-auto opacity-40 mb-2"/>
+                        <img src="noAvatar.png" className="w-12 h-12 mx-auto opacity-40 mb-2"/>
                         No students found. Upload CSV or click "Add Single Student" above.
                       </td>
                     </tr>
@@ -2070,7 +2070,7 @@
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
-                <img src="public/student.png" className="w-5 h-5"/>
+                <img src="student.png" className="w-5 h-5"/>
                 <span>${isEdit ? 'Edit Student Details' : 'New Vidyadaan Free Admission'}</span>
               </h3>
               <button onClick=${close} className="text-slate-400 hover:text-slate-700">
